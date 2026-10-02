@@ -4,125 +4,40 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#087f5b">
-<title>Shree Ram Dairy - Online</title>
-<style>
-*{box-sizing:border-box}body{margin:0;background:#f3f7f5;color:#17352c;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
-header{background:#087f5b;color:#fff;padding:22px 16px;border-radius:0 0 25px 25px}header h1{margin:0;font-size:25px}header p{margin:5px 0 0}.wrap{width:min(560px,100%);margin:auto;padding:15px}
-.card{background:#fff;border-radius:20px;padding:16px;margin:12px 0;box-shadow:0 3px 15px #0000000d}
-button{border:0;border-radius:14px;padding:14px;font-size:17px;font-weight:700}.primary{background:#087f5b;color:#fff;width:100%}.light{background:#e6f4ef;color:#087f5b}
-.row{display:flex;gap:9px}.row>*{flex:1}input{width:100%;padding:13px;border:1px solid #ccd9d4;border-radius:12px;font-size:16px}
-.small{font-size:13px;color:#687871}.hidden{display:none}.name{font-size:22px;font-weight:800}.balance{font-size:38px;color:#087f5b;font-weight:800}.money{color:#5e7069}
-#reader{margin-top:12px;border-radius:16px;overflow:hidden}#reader video{width:100%!important;border-radius:16px}.qty{background:#e6f4ef;color:#087f5b}
-.log{padding:9px 0;border-bottom:1px solid #edf0ee;font-size:14px}.danger{color:#a33;background:#fff0f0}.footer{text-align:center;color:#7b8883;font-size:12px;padding:18px}
-</style>
+<title>Shree Ram Dairy | QR Milk</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f7f6;color:#17201d;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}header{background:#087f5b;color:#fff;padding:18px 16px}.wrap{max-width:650px;margin:auto;padding:14px}.card{background:#fff;border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 3px 14px #00000012}h1,h2,h3{margin-top:0}input,button{font:inherit}input{width:100%;padding:13px;border:1px solid #ccd6d2;border-radius:11px;margin:6px 0 10px}button{border:0;border-radius:11px;padding:12px 15px;background:#087f5b;color:#fff;font-weight:700;margin:4px 3px 4px 0}button.secondary{background:#e8f3ef;color:#087f5b}button.gray{background:#68736f}.hidden{display:none!important}.muted{color:#65716d;font-size:13px}.msg{padding:10px 12px;border-radius:10px;margin:8px 0;background:#eef6f3}.err{background:#fff0ef;color:#9d1c13}.balance{font-size:34px;font-weight:800;color:#087f5b}.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1;min-width:110px}.customer-box{border:1px solid #dbe4e0;border-radius:12px;padding:12px;margin-top:10px}#reader{width:100%;margin-top:10px}
+</style>
 </head>
 <body>
-<header><div class="wrap"><h1>🥛 Shree Ram Dairy</h1><p>Online Prepaid Milk System</p></div></header>
+<header><div class="wrap"><h1>🥛 Shree Ram Dairy</h1><div>QR Prepaid Milk System • Gadarwara</div></div></header>
 <main class="wrap">
-
-<div id="login" class="card hidden">
-<h3>🔐 Staff Login</h3>
-<input id="email" type="email" placeholder="Staff email">
-<input id="password" type="password" placeholder="Password" style="margin-top:8px">
-<button class="primary" style="margin-top:10px" onclick="login()">Login</button>
-<p id="loginMsg" class="small"></p>
-</div>
-
+<div id="loginCard" class="card"><h2>Staff Login</h2><div class="muted">अधिकृत स्टाफ ही लॉगिन करें।</div><input id="email" type="email" placeholder="Staff email"><input id="password" type="password" placeholder="Password"><button id="loginBtn">Login</button><div id="loginMsg"></div></div>
 <div id="app" class="hidden">
-<div class="card">
-<div class="small">Login: <span id="userEmail"></span></div>
-<button class="light" style="width:100%;margin-top:8px" onclick="logout()">Logout</button>
-</div>
-
-<div class="card">
-<button class="primary" onclick="startQR()">📷 Customer QR Scan</button>
-<div id="reader"></div>
-<button id="closeScan" class="light hidden" style="width:100%;margin-top:8px" onclick="stopQR()">Camera बंद करें</button>
-</div>
-
-<div class="card">
-<div class="small">QR scan न हो तो Customer ID</div>
-<div class="row" style="margin-top:8px"><input id="cidInput" placeholder="SRD-001"><button class="primary" style="max-width:115px" onclick="openCustomer()">खोलें</button></div>
-</div>
-
-<div id="customer" class="card hidden">
-<div class="small">ग्राहक</div><div class="name" id="cname"></div><div class="small" id="cnum"></div>
-<div style="margin-top:17px" class="small">बचा हुआ दूध</div><div class="balance"><span id="litres">0</span> L</div>
-<div class="money">बची राशि: ₹<span id="money">0</span></div>
-<div class="small" style="margin-top:15px">आज कितना दूध दिया?</div>
-<div class="row" style="margin-top:8px"><button class="qty" onclick="give(.5)">½ L</button><button class="qty" onclick="give(1)">1 L</button><button class="qty" onclick="give(2)">2 L</button></div>
-<button class="light" style="width:100%;margin-top:10px" onclick="recharge()">➕ Advance / Recharge</button>
-</div>
-
-<div id="historyCard" class="card hidden"><b>हाल का हिसाब</b><div id="history"></div></div>
-</div>
-</main>
-<div class="footer">Shree Ram Dairy • Hospital Road, Narmada Colony, Gadarwara<br>6265414362</div>
-
+<div class="card"><div class="muted">Login: <b id="userEmail"></b></div><button id="logoutBtn" class="secondary">Logout</button></div>
+<div class="card"><h2>📷 QR से ग्राहक खोलें</h2><button id="scanBtn">QR Scan शुरू करें</button><button id="stopScanBtn" class="gray hidden">Scan बंद करें</button><div id="reader" class="hidden"></div><div id="scanMsg"></div></div>
+<div class="card"><h2>ग्राहक खोजें</h2><input id="searchId" placeholder="Customer ID जैसे SRD-001"><button id="openCustomerBtn">ग्राहक खोलें</button><button id="newCustomerBtn" class="secondary">नया ग्राहक</button></div>
+<div id="customerCard" class="card hidden"><div class="customer-box"><h2 id="custName">-</h2><div class="muted">Customer ID: <b id="custId">-</b></div><div class="muted">Mobile: <b id="custMobile">-</b></div><hr><div class="muted">बाकी दूध</div><div class="balance"><span id="custLitres">0</span> L</div><div class="muted">Balance value: ₹<span id="custBalance">0</span></div></div><h3>आज दूध दें</h3><div class="row"><button class="milkBtn" data-litre="0.5">0.5 L</button><button class="milkBtn" data-litre="1">1 L</button><button class="milkBtn" data-litre="1.5">1.5 L</button><button class="milkBtn" data-litre="2">2 L</button></div><h3>Recharge</h3><div class="row"><input id="rechargeLitres" type="number" step="0.5" min="0.5" placeholder="Litres"><button id="rechargeBtn">+ Recharge</button></div><h3>Recent History</h3><div id="history"></div></div>
+<div id="newCustomerCard" class="card hidden"><h2>नया ग्राहक</h2><input id="newId" placeholder="Customer ID जैसे SRD-001"><input id="newName" placeholder="ग्राहक का नाम"><input id="newMobile" placeholder="मोबाइल नंबर"><input id="newLitres" type="number" step="0.5" min="0" placeholder="Prepaid litres"><button id="createBtn">ग्राहक बनाएं</button><div id="createMsg"></div></div>
+<div class="card"><b>Rate: ₹70 / Litre</b><div class="muted">उदाहरण: ₹2,100 prepaid = 30 L</div></div>
+</div></main>
 <script>
-let auth,db,current=null,scanner=null,configObj={
-  apiKey:"AIzaSyDlMKJIMT6CFoXgV0HuovbmWbD1C5xTwQM",
-  authDomain:"shree-ram-dairy-3a2b8.firebaseapp.com",
-  databaseURL:"https://shree-ram-dairy-3a2b8-default-rtdb.firebaseio.com",
-  projectId:"shree-ram-dairy-3a2b8",
-  storageBucket:"shree-ram-dairy-3a2b8.firebasestorage.app",
-  messagingSenderId:"1090136134112",
-  appId:"1:1090136134112:web:96396bb470797f19541b85",
-  measurementId:"G-X8GDJ797LY"
-};
-const RATE=70;
-function saveConfig(){
- try{configObj=JSON.parse(document.getElementById("config").value);localStorage.setItem("srd_firebase_config",JSON.stringify(configObj));startFirebase(configObj)}
- catch(e){alert("Firebase config सही JSON में डालें।")}
-}
-function startFirebase(cfg){
- try{
-  if(firebase.apps.length)firebase.app().delete().catch(()=>{});
-  firebase.initializeApp(cfg);auth=firebase.auth();db=firebase.database();
-  document.getElementById("setup").classList.add("hidden");document.getElementById("login").classList.remove("hidden");
-  auth.onAuthStateChanged(u=>{if(u){document.getElementById("login").classList.add("hidden");document.getElementById("app").classList.remove("hidden");document.getElementById("userEmail").textContent=u.email||"Staff"}else{document.getElementById("login").classList.remove("hidden");document.getElementById("app").classList.add("hidden")}});
- }catch(e){alert("Firebase config check करें: "+e.message)}
-}
-function login(){auth.signInWithEmailAndPassword(email.value,password.value).catch(e=>loginMsg.textContent=e.message)}
-function logout(){auth.signOut()}
-startFirebase(configObj);
-function openCustomer(id){
- id=(id||cidInput.value||"").trim().toUpperCase();if(!id)return;
- current=id;
- db.ref("customers/"+id).on("value",snap=>{
-  let c=snap.val();if(!c){alert("Customer नहीं मिला: "+id);return}
-  customer.classList.remove("hidden");historyCard.classList.remove("hidden");
-  cname.textContent=c.name||id;cnum.textContent=id;
-  litres.textContent=Number(c.litres||0).toFixed(1).replace(".0","");
-  money.textContent=Math.round(Number(c.litres||0)*RATE);
-  let log=c.log||{};let arr=Object.values(log).slice(-20).reverse();
-  history.innerHTML=arr.map(x=>`<div class="log">🥛 ${x.qty} L — ₹${x.amount} — ${x.time||""}</div>`).join("")||'<div class="small" style="padding-top:10px">अभी कोई entry नहीं</div>';
- });
-}
-function give(q){
- if(!current)return;
- const r=db.ref("customers/"+current+"/litres");
- r.transaction(v=>{v=Number(v||0);return v>=q?Math.round((v-q)*10)/10:v})
- .then(res=>{
-  if(!res.committed){alert("Balance कम है");return}
-  const logRef=db.ref("customers/"+current+"/log").push();
-  logRef.set({qty:q,amount:q*RATE,time:new Date().toLocaleString("hi-IN",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}),staff:auth.currentUser?.email||""});
- }).catch(e=>alert(e.message));
-}
-function recharge(){
- let n=parseFloat(prompt("Advance राशि ₹","2100"));if(!n||n<=0)return;
- db.ref("customers/"+current+"/litres").transaction(v=>Math.round((Number(v||0)+n/RATE)*10)/10);
-}
-function startQR(){
- if(typeof Html5Qrcode==="undefined"){alert("Internet चालू करें");return}
- document.getElementById("reader").innerHTML="";scanner=new Html5Qrcode("reader");closeScan.classList.remove("hidden");
- scanner.start({facingMode:"environment"},{fps:10,qrbox:{width:230,height:230}},text=>{openCustomer(text);stopQR()},()=>{}).catch(()=>alert("Camera permission Allow करें."));
-}
-function stopQR(){if(scanner){scanner.stop().catch(()=>{});scanner.clear();scanner=null}reader.innerHTML="";closeScan.classList.add("hidden")}
-</script>
-</body>
-</html>
+const firebaseConfig={apiKey:"AIzaSyDlMKJIMT6CFoXgV0HuovbmWbD1C5xTwQM",authDomain:"shree-ram-dairy-3a2b8.firebaseapp.com",databaseURL:"https://shree-ram-dairy-3a2b8-default-rtdb.firebaseio.com",projectId:"shree-ram-dairy-3a2b8",storageBucket:"shree-ram-dairy-3a2b8.firebasestorage.app",messagingSenderId:"1090136134112",appId:"1:1090136134112:web:96396bb470797f19541b85",measurementId:"G-X8GDJ797LY"};
+const RATE=70; firebase.initializeApp(firebaseConfig); const auth=firebase.auth(); const db=firebase.database(); let currentCustomerId=null,scanner=null;
+const $=id=>document.getElementById(id); function msg(id,t,err=false){$(id).innerHTML='<div class="msg '+(err?'err':'')+'">'+t+'</div>'}
+auth.onAuthStateChanged(u=>{if(u){$('loginCard').classList.add('hidden');$('app').classList.remove('hidden');$('userEmail').textContent=u.email||''}else{$('loginCard').classList.remove('hidden');$('app').classList.add('hidden')}});
+$('loginBtn').onclick=async()=>{try{await auth.signInWithEmailAndPassword($('email').value.trim(),$('password').value);msg('loginMsg','Login सफल ✅')}catch(e){msg('loginMsg',e.message,true)}}; $('logoutBtn').onclick=()=>auth.signOut();
+$('newCustomerBtn').onclick=()=>{$('newCustomerCard').classList.toggle('hidden');$('customerCard').classList.add('hidden')}; $('openCustomerBtn').onclick=()=>openCustomer($('searchId').value.trim().toUpperCase());
+$('createBtn').onclick=async()=>{const id=$('newId').value.trim().toUpperCase(),name=$('newName').value.trim(),mobile=$('newMobile').value.trim(),litres=Number($('newLitres').value||0);if(!id||!name)return msg('createMsg','Customer ID और नाम भरें।',true);try{const ref=db.ref('customers/'+id),snap=await ref.once('value');if(snap.exists())return msg('createMsg','यह Customer ID पहले से मौजूद है।',true);await ref.set({id,name,mobile,litres,balance:litres*RATE,createdAt:firebase.database.ServerValue.TIMESTAMP,updatedAt:firebase.database.ServerValue.TIMESTAMP});await ref.child('logs').push({type:'create',litresChange:litres,amountChange:litres*RATE,by:auth.currentUser.email,at:firebase.database.ServerValue.TIMESTAMP});msg('createMsg','ग्राहक बन गया ✅');$('searchId').value=id;openCustomer(id)}catch(e){msg('createMsg',e.message,true)}};
+async function openCustomer(id){if(!id)return msg('scanMsg','Customer ID डालें।',true);try{const snap=await db.ref('customers/'+id).once('value');if(!snap.exists())return msg('scanMsg','Customer नहीं मिला: '+id,true);currentCustomerId=id;renderCustomer(snap.val());$('newCustomerCard').classList.add('hidden');$('customerCard').classList.remove('hidden');loadHistory(id)}catch(e){msg('scanMsg',e.message,true)}}
+function renderCustomer(c){$('custName').textContent=c.name||'-';$('custId').textContent=c.id||currentCustomerId;$('custMobile').textContent=c.mobile||'-';$('custLitres').textContent=Number(c.litres||0).toFixed(1).replace('.0','');$('custBalance').textContent=Math.round(Number(c.balance||0))}
+async function loadHistory(id){const snap=await db.ref('customers/'+id+'/logs').limitToLast(20).once('value');let a=[];snap.forEach(x=>a.push(x.val()));a.reverse();$('history').innerHTML=a.map(x=>'<div style="padding:7px 0;border-bottom:1px solid #eee">'+(x.type==='give'?'दूध दिया':'Recharge')+' • '+Number(x.litresChange||0)+' L • ₹'+Math.round(Math.abs(Number(x.amountChange||0)))+'</div>').join('')||'<div class="muted">कोई हिस्ट्री नहीं</div>'}
+async function changeMilk(litres){if(!currentCustomerId)return;const ref=db.ref('customers/'+currentCustomerId);try{await db.runTransaction(c=>{if(c===null)return c;const have=Number(c.litres||0);if(have<litres)return; c.litres=+(have-litres).toFixed(2);c.balance=+(c.litres*RATE).toFixed(2);c.updatedAt=firebase.database.ServerValue.TIMESTAMP;return c});const snap=await ref.once('value');if(Number(snap.val().litres||0)<0)return;await ref.child('logs').push({type:'give',litresChange:-litres,amountChange:-litres*RATE,by:auth.currentUser.email,at:firebase.database.ServerValue.TIMESTAMP});renderCustomer(snap.val());loadHistory(currentCustomerId)}catch(e){msg('scanMsg',e.message,true)}}
+document.querySelectorAll('.milkBtn').forEach(b=>b.onclick=()=>changeMilk(Number(b.dataset.litre)));
+$('rechargeBtn').onclick=async()=>{const litres=Number($('rechargeLitres').value||0);if(!currentCustomerId||litres<=0)return;const ref=db.ref('customers/'+currentCustomerId);try{await ref.transaction(c=>{if(c===null)return c;c.litres=+(Number(c.litres||0)+litres).toFixed(2);c.balance=+(c.litres*RATE).toFixed(2);c.updatedAt=firebase.database.ServerValue.TIMESTAMP;return c});await ref.child('logs').push({type:'recharge',litresChange:litres,amountChange:litres*RATE,by:auth.currentUser.email,at:firebase.database.ServerValue.TIMESTAMP});$('rechargeLitres').value='';const snap=await ref.once('value');renderCustomer(snap.val());loadHistory(currentCustomerId)}catch(e){msg('scanMsg',e.message,true)}};
+$('scanBtn').onclick=async()=>{if(!window.Html5Qrcode)return msg('scanMsg','QR scanner load नहीं हुआ। पेज refresh करें।',true);$('reader').classList.remove('hidden');$('stopScanBtn').classList.remove('hidden');$('scanBtn').classList.add('hidden');scanner=new Html5Qrcode('reader');try{await scanner.start({facingMode:'environment'},{fps:10,qrbox:220},decoded=>{stopScan();openCustomer(decoded.trim())},()=>{})}catch(e){msg('scanMsg','Camera permission दें और फिर कोशिश करें।',true)}}; async function stopScan(){if(scanner){try{await scanner.stop()}catch(e){}scanner.clear();scanner=null}$('reader').classList.add('hidden');$('stopScanBtn').classList.add('hidden');$('scanBtn').classList.remove('hidden')}; $('stopScanBtn').onclick=stopScan;
+</script></body></html>
