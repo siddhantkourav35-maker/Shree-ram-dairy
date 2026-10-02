@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#087f5b">
+<link rel="manifest" href="manifest.json">
+<title>Shree Ram Dairy | QR Milk</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f7f5;color:#17352c;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+header{background:#087f5b;color:#fff;padding:22px 16px;border-radius:0 0 25px 25px}header h1{margin:0;font-size:25px}header p{margin:5px 0 0}
+.wrap{width:min(560px,100%);margin:auto;padding:15px}.card{background:#fff;border-radius:20px;padding:16px;margin:12px 0;box-shadow:0 3px 15px #0000000c}
+button{border:0;border-radius:14px;padding:14px;font-size:17px;font-weight:700}.primary{background:#087f5b;color:#fff;width:100%}.light{background:#e6f4ef;color:#087f5b}.row{display:flex;gap:9px}.row>*{flex:1}
+input{width:100%;padding:13px;border:1px solid #ccd9d4;border-radius:12px;font-size:16px}.small{font-size:13px;color:#687871}.hidden{display:none}.name{font-size:22px;font-weight:800}.balance{font-size:38px;color:#087f5b;font-weight:800}.money{color:#5e7069}
+#reader{margin-top:12px;border-radius:16px;overflow:hidden}#reader video{width:100%!important;border-radius:16px}
+.qty{background:#e6f4ef;color:#087f5b}.log{padding:9px 0;border-bottom:1px solid #edf0ee;font-size:14px}.footer{text-align:center;color:#7b8883;font-size:12px;padding:18px}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>🥛 Shree Ram Dairy</h1><p>Prepaid Milk • QR Customer System</p></div></header>
+<main class="wrap">
+<div class="card">
+<button class="primary" onclick="startQR()">📷 QR Scan करें</button>
+<div id="reader"></div>
+<button id="closeScan" class="light hidden" style="width:100%;margin-top:8px" onclick="stopQR()">Camera बंद करें</button>
+<p class="small">iPhone और Android दोनों के camera से QR scan किया जा सकता है।</p>
+</div>
+
+<div class="card">
+<div class="small">QR scan न हो तो Customer ID</div>
+<div class="row" style="margin-top:8px"><input id="cidInput" placeholder="SRD-001"><button class="primary" style="max-width:115px" onclick="openCustomer()">खोलें</button></div>
+</div>
+
+<div id="customer" class="card hidden">
+<div class="small">ग्राहक</div><div class="name" id="cname"></div><div class="small" id="cnum"></div>
+<div style="margin-top:17px" class="small">बचा हुआ दूध</div><div class="balance"><span id="litres"></span> L</div><div class="money">बची राशि: ₹<span id="money"></span></div>
+<div class="small" style="margin-top:15px">आज कितना दूध दिया?</div>
+<div class="row" style="margin-top:8px"><button class="qty" onclick="give(.5)">½ L</button><button class="qty" onclick="give(1)">1 L</button><button class="qty" onclick="give(2)">2 L</button></div>
+<button class="light" style="width:100%;margin-top:10px" onclick="recharge()">➕ Advance / Recharge</button>
+</div>
+
+<div id="historyCard" class="card hidden"><b>आज का हिसाब</b><div id="history"></div></div>
+
+<div class="card">
+<b>📱 iPhone / Android पर App जैसा</b>
+<p class="small">इस website को Chrome/Safari में खोलकर “Add to Home Screen” करने पर icon के साथ app की तरह चलेगी।</p>
+</div>
+</main>
+<div class="footer">Shree Ram Dairy • Hospital Road, Narmada Colony, Gadarwara<br>6265414362</div>
+
+<script src="https://unpkg.com/html5-qrcode" defer></script>
+<script>
+const RATE=70;
+let db=JSON.parse(localStorage.getItem("srd_customers")||"null")||{
+"SRD-001":{name:"Rahul",mobile:"",litres:30,log:[]},
+"SRD-002":{name:"Amit",mobile:"",litres:30,log:[]},
+"SRD-003":{name:"Customer 3",mobile:"",litres:15,log:[]}};
+let current=null,scanner=null;
+function save(){localStorage.setItem("srd_customers",JSON.stringify(db))}
+function openCustomer(id){
+ id=(id||document.getElementById("cidInput").value||"").trim().toUpperCase();
+ if(!db[id]){alert("Customer ID नहीं मिला");return}
+ current=id;document.getElementById("customer").classList.remove("hidden");document.getElementById("historyCard").classList.remove("hidden");render();
+}
+function render(){
+ let c=db[current];document.getElementById("cname").textContent=c.name;document.getElementById("cnum").textContent=current;
+ document.getElementById("litres").textContent=(+c.litres).toFixed(1).replace(".0","");
+ document.getElementById("money").textContent=Math.round(c.litres*RATE);
+ document.getElementById("history").innerHTML=(c.log||[]).slice().reverse().map(x=>`<div class="log">🥛 ${x.qty} L — ₹${x.amount} — ${x.time}</div>`).join("")||'<div class="small" style="padding-top:10px">अभी कोई entry नहीं</div>';
+}
+function give(q){
+ let c=db[current];if(c.litres<q){alert("Balance कम है");return}
+ c.litres=Math.round((c.litres-q)*10)/10;c.log=c.log||[];
+ c.log.push({qty:q,amount:q*RATE,time:new Date().toLocaleString("hi-IN",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})});
+ save();render();
+}
+function recharge(){
+ let n=parseFloat(prompt("Advance राशि ₹","2100"));if(!n||n<=0)return;
+ db[current].litres=Math.round((db[current].litres+n/RATE)*10)/10;save();render();
+}
+function startQR(){
+ if(typeof Html5Qrcode==="undefined"){alert("QR scanner load नहीं हुआ। Internet चालू करके फिर कोशिश करें.");return}
+ document.getElementById("reader").innerHTML="";
+ scanner=new Html5Qrcode("reader");
+ document.getElementById("closeScan").classList.remove("hidden");
+ scanner.start({facingMode:"environment"},{fps:10,qrbox:{width:230,height:230}},
+  text=>{openCustomer(text);stopQR()},()=>{}).catch(e=>alert("Camera permission Allow करें।"));
+}
+function stopQR(){if(scanner){scanner.stop().catch(()=>{});scanner.clear();scanner=null}document.getElementById("reader").innerHTML="";document.getElementById("closeScan").classList.add("hidden")}
+</script>
+</body>
+</html>
