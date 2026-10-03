@@ -72,7 +72,7 @@
  <div class="row"><input id="billDiscount" type="number" min="0" value="0" placeholder="Discount ₹"><select id="billDiscountType"><option value="rs">₹ Discount</option><option value="pct">% Discount</option></select></div>
  <div class="row"><input id="billReceived" type="number" min="0" value="0" placeholder="Received Money"><select id="billPaymentMode"><option>Cash</option><option>UPI</option><option>Other</option></select></div>
  <div class="bill-total-box"><div>Subtotal <b id="billSubtotal">₹0</b></div><div>Discount <b id="billDiscountShow">₹0</b></div><div class="grand">TOTAL <b id="billTotal">₹0</b></div><div>Received <b id="billReceivedShow">₹0</b></div><div>Pending <b id="billPending">₹0</b></div></div>
- <button onclick="saveBill()">💾 Bill Save करें</button><div class="muted small">🖨️ 58mm Bluetooth printer: 🔵 Bluetooth Connect & Print supported browser/printer पर direct try करेगा; iPhone/Safari में compatible printer app/Print dialog की जरूरत हो सकती है।</div><div id="lastBillActions" class="row" style="display:none;margin-top:10px"><button class="secondary" onclick="printLastBill()">🖨️ 58mm Print</button><button class="secondary" onclick="bluetoothPrintLastBill()">🔵 Bluetooth Connect & Print</button><button class="secondary" onclick="downloadLastBillPDF()">📄 PDF</button><button class="secondary" onclick="whatsappLastBill()">📲 WhatsApp</button></div><div id="lastBillSavedMsg" class="notice" style="display:none;margin-top:8px"></div>
+ <button onclick="saveBill()">💾 Bill Save करें</button><div class="muted small">🖨️ 58mm Bluetooth printer: phone/browser के अनुसार compatible printer app या Print dialog की जरूरत हो सकती है।</div><div id="lastBillActions" class="row" style="display:none;margin-top:10px"><button class="secondary" onclick="printLastBill()">🖨️ 58mm Print</button><button class="secondary" onclick="bluetoothPrintLastBill()">🔵 Bluetooth Connect & Print</button><button class="secondary" onclick="downloadLastBillPDF()">📄 PDF</button><button class="secondary" onclick="whatsappLastBill()">📲 WhatsApp</button></div><div id="lastBillSavedMsg" class="notice" style="display:none;margin-top:8px"></div>
  <div id="billMsg"></div><div class="row"><button class="secondary" onclick="loadBillHistory()">📚 Billing History</button><button class="secondary" onclick="downloadBillHistoryCSV()">⬇️ Bills CSV</button></div><div id="billHistory" class="small"></div><div id="billHistoryList" class="small"></div>
 </div>
 <div id="stockCard" class="card module-card">
@@ -92,8 +92,10 @@
  <div id="expenseTable" style="margin-top:10px"></div><div id="financeMsg"></div>
 </div>
 <div id="staffCard" class="card module-card">
- <div class="section-title">👷 Staff Monthly Record</div><div class="muted">केवल Absent dates दर्ज होंगे • Date-wise Advance • Salary calculation.</div>
- <div class="row"><input id="staffName" placeholder="Staff Name"><input id="staffMonth" type="month"></div>
+ <div class="section-title">👷 Staff Monthly Record</div><div class="muted">हर Staff का अलग profile रहेगा। एक Staff की entry दूसरे Staff में नहीं मिलेगी। केवल Absent dates • Date-wise Advance • Salary calculation.</div>
+ <div class="row"><select id="staffSelect" onchange="selectStaff(this.value)"><option value="">-- Staff चुनें --</option></select><button class="secondary" onclick="showNewStaffForm()">➕ New Staff</button></div>
+ <div id="newStaffBox" class="notice" style="display:none"><div class="row"><input id="newStaffName" placeholder="New Staff Name"><input id="newStaffMobile" placeholder="Mobile (optional)"></div><button onclick="addNewStaff()">✅ Staff Add करें</button></div>
+ <div class="row"><input id="staffName" placeholder="Staff Name" readonly><input id="staffMonth" type="month"></div>
  <div class="row"><input id="staffAbsentDate" type="date"><input id="staffAdvance" type="number" min="0" placeholder="Advance ₹"></div>
  <div class="row"><input id="staffMonthlySalary" type="number" min="0" placeholder="Monthly Salary ₹"><input id="staffDaysInMonth" type="number" min="1" placeholder="Days in Month"></div>
  <button onclick="saveStaffEntry()">💾 Entry Save</button><button class="secondary" onclick="loadStaffRecord()">🔄 View Record</button><button class="secondary" onclick="downloadStaffCSV()">📄 CSV</button><button class="secondary" onclick="downloadStaffPDF()">📄 PDF</button>
@@ -374,80 +376,11 @@ function printLastBill(){
   setTimeout(()=>window.print(),150);
 }
 
-let bluetoothPrinterDevice=null, bluetoothPrinterCharacteristic=null;
-
-function buildEscPosBillBytes(b){
-  const enc=new TextEncoder(), lines=[];
-  lines.push('\\x1B\\x40','\\x1B\\x61\\x01','SHREE RAM DAIRY\\n','Shuddhta Hamari Pehchan\\n','Hospital Road, Gadarwara\\n','8871983383\\n','\\x1B\\x61\\x00','--------------------------------\\n');
-  lines.push('Bill No: '+String(b.billNo||'')+'\\n','Customer: '+String(b.customerName||'Walk-in')+'\\n','--------------------------------\\n','Item        Qty   Rate   Amount\\n','--------------------------------\\n');
-  (b.items||[]).forEach(x=>{
-    const name=String(x.product||'').slice(0,10).padEnd(10,' ');
-    const qty=(String(x.qty||0)+String(x.unit||'')).slice(0,5).padStart(5,' ');
-    const rate=('₹'+Math.round(Number(x.rate||0))).slice(0,7).padStart(7,' ');
-    const amt=('₹'+Math.round(Number(x.qty||0)*Number(x.rate||0))).slice(0,8).padStart(8,' ');
-    lines.push(name+qty+rate+amt+'\\n');
-  });
-  lines.push('--------------------------------\\n',
-    ('Subtotal'.padEnd(22,' ')+'₹'+Math.round(b.subtotal||0)+'\\n'),
-    ('Discount'.padEnd(22,' ')+'₹'+Math.round(b.discount||0)+'\\n'),
-    ('TOTAL'.padEnd(22,' ')+'₹'+Math.round(b.total||0)+'\\n'),
-    ('Received Money'.padEnd(22,' ')+'₹'+Math.round(b.received||0)+'\\n'),
-    ('Pending Money'.padEnd(22,' ')+'₹'+Math.round(b.pending||0)+'\\n'),
-    'Payment: '+String(b.paymentMode||'Cash')+'\\n',
-    '--------------------------------\\n','\\x1B\\x61\\x01','Thank you! Please visit again\\n','\\x1B\\x64\\x04');
-  return enc.encode(lines.join(''));
-}
-
-async function findWritableBluetoothCharacteristic(server){
-  const preferred=['0000ffe0-0000-1000-8000-00805f9b34fb','0000ff00-0000-1000-8000-00805f9b34fb','000018f0-0000-1000-8000-00805f9b34fb'];
-  for(const uuid of preferred){
-    try{
-      const s=await server.getPrimaryService(uuid), cs=await s.getCharacteristics();
-      const w=cs.find(c=>c.properties.writeWithoutResponse||c.properties.write);
-      if(w)return w;
-    }catch(e){}
-  }
-  let services=[];try{services=await server.getPrimaryServices()}catch(e){}
-  for(const s of services){
-    let cs=[];try{cs=await s.getCharacteristics()}catch(e){}
-    const w=cs.find(c=>c.properties.writeWithoutResponse||c.properties.write);
-    if(w)return w;
-  }
-  throw new Error('Printer का writable Bluetooth characteristic नहीं मिला।');
-}
-
-async function bluetoothPrintLastBill(){
+function bluetoothPrintLastBill(){
   if(!ensureBillPreview())return msg('billMsg','पहले Bill Save करें।',true);
-  const b=getLastSavedBill();if(!b)return msg('billMsg','Bill data नहीं मिला।',true);
-  if(!navigator.bluetooth){
-    return msg('billMsg','🔵 Bluetooth option है, लेकिन iPhone/Safari में direct Web Bluetooth उपलब्ध नहीं है। iPhone में compatible printer app/Print dialog इस्तेमाल करें।',true);
-  }
-  try{
-    msg('billMsg','🔵 Bluetooth printer चुनें…');
-    if(!bluetoothPrinterDevice || !bluetoothPrinterDevice.gatt?.connected){
-      bluetoothPrinterDevice=await navigator.bluetooth.requestDevice({
-        acceptAllDevices:true,
-        optionalServices:['0000ffe0-0000-1000-8000-00805f9b34fb','0000ff00-0000-1000-8000-00805f9b34fb','000018f0-0000-1000-8000-00805f9b34fb']
-      });
-      bluetoothPrinterDevice.addEventListener('gattserverdisconnected',()=>{
-        bluetoothPrinterCharacteristic=null;
-        msg('billMsg','Bluetooth printer disconnect हो गया।',true);
-      });
-    }
-    const server=bluetoothPrinterDevice.gatt.connected?bluetoothPrinterDevice.gatt:await bluetoothPrinterDevice.gatt.connect();
-    bluetoothPrinterCharacteristic=bluetoothPrinterCharacteristic||await findWritableBluetoothCharacteristic(server);
-    const data=buildEscPosBillBytes(b), chunkSize=180;
-    for(let i=0;i<data.length;i+=chunkSize){
-      const chunk=data.slice(i,i+chunkSize);
-      if(bluetoothPrinterCharacteristic.properties.writeWithoutResponse && bluetoothPrinterCharacteristic.writeValueWithoutResponse)
-        await bluetoothPrinterCharacteristic.writeValueWithoutResponse(chunk);
-      else await bluetoothPrinterCharacteristic.writeValue(chunk);
-    }
-    msg('billMsg','🔵 Bluetooth printer पर bill print हो गया ✅');
-  }catch(e){
-    bluetoothPrinterCharacteristic=null;
-    msg('billMsg','Bluetooth print नहीं हुआ: '+(e?.message||e),true);
-  }
+  if(!navigator.bluetooth)return msg('billMsg','iPhone/Safari में website से direct Bluetooth thermal printing supported नहीं है। 58mm Print दबाकर AirPrint/compatible printer app चुनें। Android Chrome में Bluetooth-enabled printer के लिए अलग connector चाहिए।',true);
+  msg('billMsg','Bluetooth printer connection browser/device पर निर्भर है। पहले 58mm Print से printer test करें।');
+  printLastBill();
 }
 function downloadLastBillPDF(){
   const b=getLastSavedBill();if(!b)return msg('billMsg','पहले Bill Save करें।',true);
@@ -464,14 +397,108 @@ function whatsappLastBill(){
 function clearBillFormForNext(){billItems=[];lastBill=getLastSavedBill();renderBillItems();renderBillPreview();}
 
 try{if(getLastSavedBill())showLastBillActions();}catch(e){}
-async function loadBillHistory(){try{const snap=await db.ref('bills').limitToLast(100).once('value');let rows=[];snap.forEach(ch=>{const b=ch.val()||{};rows.push(b)});rows.sort((a,b)=>Number(b.at||0)-Number(a.at||0));$('billHistoryList').innerHTML=rows.length?'<table><tr><th>Bill</th><th>Date</th><th>Customer</th><th>Total</th><th>Received</th><th>Pending</th></tr>'+rows.map(b=>'<tr><td>'+esc(b.billNo||'')+'</td><td>'+ (b.at?new Date(b.at).toLocaleString('en-IN'):'')+'</td><td>'+esc(b.customerName||'')+'</td><td>₹'+Math.round(b.total||0)+'</td><td>₹'+Math.round(b.received||0)+'</td><td>₹'+Math.round(b.pending||0)+'</td></tr>').join('')+'</table>':'<span class="muted">अभी कोई bill नहीं है।</span>'}catch(e){msg('billMsg',e.message,true)}}
+async function loadBillHistory(){try{const snap=await db.ref('bills').limitToLast(100).once('value');let rows=[];snap.forEach(ch=>{const b=ch.val()||{};rows.push(b)});rows.sort((a,b)=>Number(b.at||0)-Number(a.at||0));$('billHistoryList').innerHTML=rows.length?'<table><tr><th>Bill</th><th>Date</th><th>Customer</th><th>Total</th><th>Received</th><th>Pending</th><th>Action</th></tr>'+rows.map(b=>'<tr><td>'+esc(b.billNo||'')+'</td><td>'+(b.at?new Date(b.at).toLocaleString('en-IN'):'')+'</td><td>'+esc(b.customerName||'')+'</td><td>₹'+Math.round(b.total||0)+'</td><td>₹'+Math.round(b.received||0)+'</td><td>₹'+Math.round(b.pending||0)+'</td><td><button class="secondary" onclick="openSavedBill(\''+esc(b.billNo||'')+'\')">Open / Print / Send</button></td></tr>').join('')+'</table>':'<span class="muted">अभी कोई bill नहीं है।</span>'}catch(e){msg('billMsg',e.message,true)}}
+async function openSavedBill(no){try{const s=await db.ref('bills/'+no).once('value');if(!s.exists())return msg('billMsg','Bill नहीं मिला।',true);lastBill=s.val();if(!lastBill.at)lastBill.at=Date.now();try{localStorage.setItem('srd_last_bill',JSON.stringify(lastBill))}catch(e){}showLastBillActions();renderBillPreview();msg('billMsg','Bill '+esc(no)+' खुल गया ✅ अब Print / PDF / WhatsApp कर सकते हैं।');window.scrollTo({top:document.getElementById('billingCard')?.offsetTop||0,behavior:'smooth'})}catch(e){msg('billMsg',e.message,true)}}
 function downloadBillHistoryCSV(){db.ref('bills').once('value').then(s=>{let rows=[['Bill No','Date','Customer','Mobile','Subtotal','Discount','Total','Received','Pending','Payment']];s.forEach(c=>{const b=c.val()||{};rows.push([b.billNo,b.at?new Date(b.at).toLocaleString('en-IN'):'',b.customerName,b.customerMobile||'',b.subtotal,b.discount,b.total,b.received,b.pending,b.paymentMode])});const csv='\\ufeff'+rows.map(r=>r.map(csvCell).join(',')).join('\\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='Shree_Ram_Dairy_Billing_History.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}).catch(e=>msg('billMsg',e.message,true))}
 function downloadStaffPDF(){if(!window.jspdf)return msg('staffMsg','PDF tool load नहीं हुआ।',true);const name=$('staffName')?.value.trim(),month=$('staffMonth')?.value;if(!name||!month)return msg('staffMsg','पहले Staff name और month भरें।',true);const id=(name+'_'+month).toLowerCase().replace(/[^a-z0-9]+/g,'_');db.ref('staff/'+id).once('value').then(s=>{const x=s.val()||{},abs=Object.keys(x.absent||{}).sort(),adv=Object.values(x.advances||{}),salary=Number(x.meta?.salary||0),days=Number(x.meta?.days||30),totalAdv=adv.reduce((a,v)=>a+Number(v.amount||0),0),ded=days?salary/days*abs.length:0,rem=Math.max(0,salary-ded-totalAdv),{jsPDF}=window.jspdf,p=new jsPDF({unit:'mm',format:'a4'});let y=18;p.setFontSize(16);p.text('SHREE RAM DAIRY - STAFF MONTHLY REPORT',105,y,{align:'center'});y+=10;p.setFontSize(10);[['Staff Name',name],['Month',month],['Salary','₹'+Math.round(salary)],['Days in Month',days],['Total Absent',abs.length],['Absent Deduction','₹'+Math.round(ded)],['Total Advance','₹'+Math.round(totalAdv)],['Remaining Salary','₹'+Math.round(rem)]].forEach(a=>{p.text(a[0]+':',15,y);p.text(String(a[1]),65,y);y+=6});y+=4;p.setFontSize(11);p.text('Absent Dates',15,y);y+=6;p.setFontSize(9);p.text(abs.length?abs.join(', '):'None',15,y,{maxWidth:175});y+=12;p.setFontSize(11);p.text('Advance Entries',15,y);y+=6;p.setFontSize(9);adv.forEach(a=>{p.text((a.date||'')+'   ₹'+Math.round(a.amount||0),15,y);y+=5});p.save('Shree_Ram_Dairy_Staff_'+month+'.pdf')}).catch(e=>msg('staffMsg',e.message,true))}
 async function downloadFullBackup(){try{if(!isAdminUser())return msg('backupMsg','सिर्फ Owner/Admin backup ले सकता है।',true);const paths=['customers','cards','bills','expenses','stock','stockLogs','staff','settings','meta'];const out={exportedAt:new Date().toISOString(),app:'Shree Ram Dairy'};for(const path of paths){const s=await db.ref(path).once('value');out[path]=s.val()||null}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(out,null,2)],{type:'application/json'}));a.download='Shree_Ram_Dairy_Backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);localStorage.setItem('srd_last_backup',Date.now());msg('backupMsg','Full backup download हो गया ✅')}catch(e){msg('backupMsg',e.message,true)}}
 function checkBackupReminder(){const last=Number(localStorage.getItem('srd_last_backup')||0),days=last?Math.floor((Date.now()-last)/86400000):999;if(days>=7)return msg('backupMsg','⚠️ Backup को '+(last?'7 दिन से ज्यादा हो गए हैं।':'अभी तक backup नहीं बनाया गया।')+' आज Full Backup करें।',true);msg('backupMsg','Last backup '+days+' दिन पहले था। अभी backup सुरक्षित है।')}
 function applyRolePermissions(){const isAdmin=String(auth.currentUser?.email||'').toLowerCase()==='siddhantkourav35@gmail.com';document.querySelectorAll('[data-admin-only]').forEach(el=>el.classList.toggle('hidden',!isAdmin));const box=$('dataProtection');if(box){const r=document.getElementById('roleMsg')||document.createElement('div');r.id='roleMsg';r.className='muted';r.textContent=isAdmin?'Role: Owner/Admin — Full access':'Role: Staff — Operational access';if(!r.parentNode)box.appendChild(r)}}
-auth.onAuthStateChanged(u=>{if(u){setTimeout(()=>{applyRolePermissions();checkBackupReminder()},400)}});
+auth.onAuthStateChanged(u=>{if(u){setTimeout(()=>{applyRolePermissions();checkBackupReminder();loadStaffList()},400)}});
 setTimeout(()=>{const s=$('settingsCard'),r=$('reportCard'),b=$('backupCard');[s,r,b].forEach(x=>{if(x)x.setAttribute('data-admin-only','1')});applyRolePermissions();},200);
+
+// ===== SYSTEMATIC STABILITY LAYER =====
+// All operational buttons are defined here so every locked UI control has a working handler.
+function toggleHomeMenu(){
+  let menu=document.getElementById('srdMoreMenu');
+  if(!menu){
+    menu=document.createElement('div');menu.id='srdMoreMenu';
+    menu.style.cssText='position:fixed;right:12px;top:72px;z-index:9999;background:#fff;border:1px solid #dce9e2;border-radius:18px;padding:10px;box-shadow:0 14px 35px rgba(0,0,0,.16);width:210px';
+    menu.innerHTML=`<button class="secondary" onclick="scrollToId('stockCard');toggleHomeMenu()">📦 Stock</button><button class="secondary" onclick="scrollToId('financeCard');toggleHomeMenu()">📒 Finance</button><button class="secondary" onclick="scrollToId('staffCard');toggleHomeMenu()">👷 Staff</button><button class="secondary" onclick="scrollToId('reportCard');toggleHomeMenu()">📈 Reports</button><button class="secondary" onclick="scrollToId('settingsCard');toggleHomeMenu()">⚙️ Settings</button><button class="secondary" onclick="scrollToId('backupCard');toggleHomeMenu()">🔐 Backup</button>`;
+    document.body.appendChild(menu);return;
+  }
+  menu.remove();
+}
+function quickAddProduct(name){
+  const p=BILL_PRODUCTS.find(x=>x[0].toLowerCase()===String(name).toLowerCase());
+  if(!p)return msg('billMsg','Product नहीं मिला।',true);
+  addBillItem({product:p[0],unit:p[1],qty:1,rate:p[2]});
+  scrollToId('billingCard');
+  msg('billMsg',p[0]+' billing में add हो गया ✅');
+}
+async function saveStock(){
+  try{
+    if(!auth.currentUser)return msg('stockMsg','पहले Staff Login करें।',true);
+    const product=$('stockProduct')?.value.trim();const qty=Number($('stockQty')?.value||0);const action=$('stockAction')?.value||'in';const min=Number($('stockMin')?.value||0);
+    if(!product||qty<=0)return msg('stockMsg','Product और quantity सही भरें।',true);
+    const key=product.replace(/[.#$\[\]/]/g,'_').trim();const ref=db.ref('stock/'+key);const snap=await ref.once('value');const old=Number(snap.val()?.qty||0);if(action==='out'&&qty>old)return msg('stockMsg','इतना stock उपलब्ध नहीं है।',true);
+    const next=action==='in'?old+qty:old-qty;await ref.set({product,qty:next,min,updatedAt:firebase.database.ServerValue.TIMESTAMP,updatedBy:auth.currentUser.email});
+    await db.ref('stockLogs').push({product,action,qty,oldQty:old,newQty:next,min,by:auth.currentUser.email,at:firebase.database.ServerValue.TIMESTAMP});
+    $('stockQty').value='';msg('stockMsg',product+' stock save हो गया ✅');loadStock();
+  }catch(e){msg('stockMsg',e.message,true)}
+}
+async function loadStock(){
+  try{const snap=await db.ref('stock').once('value');let rows=[];snap.forEach(c=>{const x=c.val()||{};rows.push(x)});rows.sort((a,b)=>String(a.product).localeCompare(String(b.product)));$('stockTable').innerHTML=rows.length?'<table><tr><th>Product</th><th>Stock</th><th>Low Limit</th><th>Status</th></tr>'+rows.map(x=>'<tr><td>'+esc(x.product)+'</td><td>'+Number(x.qty||0)+'</td><td>'+Number(x.min||0)+'</td><td>'+(Number(x.qty||0)<=Number(x.min||0)?'<b style="color:#b42318">LOW</b>':'OK')+'</td></tr>').join('')+'</table>':'<span class="muted">अभी stock record नहीं है।</span>'}catch(e){msg('stockMsg',e.message,true)}
+}
+async function saveExpense(){
+  try{if(!auth.currentUser)return msg('financeMsg','पहले Staff Login करें।',true);const name=$('expenseName')?.value.trim(),amount=Number($('expenseAmount')?.value||0),date=$('expenseDate')?.value||new Date().toISOString().slice(0,10),note=$('expenseNote')?.value.trim()||'';if(!name||amount<=0)return msg('financeMsg','खर्च का नाम और राशि भरें।',true);await db.ref('expenses').push({name,amount,date,note,by:auth.currentUser.email,at:firebase.database.ServerValue.TIMESTAMP});$('expenseAmount').value='';$('expenseNote').value='';msg('financeMsg','खर्च save हो गया ✅');loadFinance()}catch(e){msg('financeMsg',e.message,true)}
+}
+async function loadFinance(){
+  try{const today=new Date().toISOString().slice(0,10);let sales=0,expense=0,rows=[];const bs=await db.ref('bills').once('value');bs.forEach(c=>{const b=c.val()||{};if(new Date(b.at||0).toISOString().slice(0,10)===today)sales+=Number(b.received||0)});const es=await db.ref('expenses').once('value');es.forEach(c=>{const x=c.val()||{};rows.push(x);if(String(x.date)===today)expense+=Number(x.amount||0)});$('finSales').textContent='₹'+Math.round(sales);$('finExpense').textContent='₹'+Math.round(expense);$('finProfit').textContent='₹'+Math.round(sales-expense);rows.sort((a,b)=>String(b.date).localeCompare(String(a.date)));$('expenseTable').innerHTML=rows.length?'<table><tr><th>Date</th><th>Expense</th><th>Amount</th><th>Note</th></tr>'+rows.slice(0,50).map(x=>'<tr><td>'+esc(x.date)+'</td><td>'+esc(x.name)+'</td><td>₹'+Math.round(x.amount||0)+'</td><td>'+esc(x.note||'')+'</td></tr>').join('')+'</table>':'<span class="muted">अभी expense record नहीं है।</span>'}catch(e){msg('financeMsg',e.message,true)}
+}
+function staffKey(name){return String(name||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'_')}
+async function loadStaffList(){
+  try{
+    const snap=await db.ref('staffProfiles').once('value');
+    const sel=$('staffSelect'); if(!sel)return;
+    const rows=[]; snap.forEach(c=>{const x=c.val()||{};rows.push({id:c.key,...x})});
+    rows.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));
+    sel.innerHTML='<option value="">-- Staff चुनें --</option>'+rows.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name||'')+(x.mobile?' • '+esc(x.mobile):'')+'</option>').join('');
+  }catch(e){msg('staffMsg',e.message,true)}
+}
+function showNewStaffForm(){const b=$('newStaffBox');if(b)b.style.display='block';$('newStaffName')?.focus()}
+async function addNewStaff(){
+  try{
+    if(!auth.currentUser)return msg('staffMsg','पहले Staff Login करें।',true);
+    const name=$('newStaffName')?.value.trim(),mobile=$('newStaffMobile')?.value.trim()||'';
+    if(!name)return msg('staffMsg','Staff name भरें।',true);
+    const id='STF-'+Math.random().toString(36).slice(2,8).toUpperCase();
+    await db.ref('staffProfiles/'+id).set({name,mobile,createdAt:firebase.database.ServerValue.TIMESTAMP,createdBy:auth.currentUser.email,active:true});
+    await loadStaffList();$('staffSelect').value=id;selectStaff(id);$('newStaffName').value='';$('newStaffMobile').value='';$('newStaffBox').style.display='none';msg('staffMsg','New Staff अलग profile में add हो गया ✅');
+  }catch(e){msg('staffMsg',e.message,true)}
+}
+async function selectStaff(id){
+  if(!id){$('staffName').value='';$('staffTable').innerHTML='';return;}
+  try{const s=await db.ref('staffProfiles/'+id).once('value');const x=s.val()||{};$('staffName').value=x.name||'';loadStaffRecord();}catch(e){msg('staffMsg',e.message,true)}
+}
+async function saveStaffEntry(){
+  try{
+    if(!auth.currentUser)return msg('staffMsg','पहले Staff Login करें।',true);
+    const sid=$('staffSelect')?.value,name=$('staffName')?.value.trim(),month=$('staffMonth')?.value,date=$('staffAbsentDate')?.value,adv=Number($('staffAdvance')?.value||0),salary=Number($('staffMonthlySalary')?.value||0),days=Number($('staffDaysInMonth')?.value||0);
+    if(!sid||!name||!month)return msg('staffMsg','पहले Staff चुनें और month भरें।',true);
+    const ref=db.ref('staffRecords/'+sid+'/'+month);
+    await ref.child('meta').update({staffId:sid,name,month,salary,days,updatedAt:firebase.database.ServerValue.TIMESTAMP,updatedBy:auth.currentUser.email});
+    if(date)await ref.child('absent/'+date).set({date,by:auth.currentUser.email,at:firebase.database.ServerValue.TIMESTAMP});
+    if(adv>0){const adate=new Date().toISOString().slice(0,10)+'-'+Date.now();await ref.child('advances/'+adate).set({date:new Date().toISOString().slice(0,10),amount:adv,by:auth.currentUser.email,at:firebase.database.ServerValue.TIMESTAMP});}
+    $('staffAdvance').value='';$('staffAbsentDate').value='';msg('staffMsg','Staff record save हो गया ✅');loadStaffRecord();
+  }catch(e){msg('staffMsg',e.message,true)}
+}
+async function loadStaffRecord(){
+  try{
+    const sid=$('staffSelect')?.value,name=$('staffName')?.value.trim(),month=$('staffMonth')?.value;if(!sid||!name||!month)return;
+    const s=await db.ref('staffRecords/'+sid+'/'+month).once('value'),x=s.val()||{},abs=Object.keys(x.absent||{}).sort(),adv=Object.values(x.advances||{}),salary=Number(x.meta?.salary||0),days=Number(x.meta?.days||30),totalAdv=adv.reduce((a,v)=>a+Number(v.amount||0),0),ded=days?salary/days*abs.length:0,rem=Math.max(0,salary-ded-totalAdv);
+    $('staffTable').innerHTML=`<div class="customer-box"><b>${esc(name)}</b><br>Month: ${esc(month)}<br>Absent: ${abs.length} ${abs.length?'('+abs.join(', ')+')':'(None)'}<br>Total Advance: ₹${Math.round(totalAdv)}<br>Salary: ₹${Math.round(salary)}<br>Absent Deduction: ₹${Math.round(ded)}<br><b>Remaining Salary: ₹${Math.round(rem)}</b></div>`;
+  }catch(e){msg('staffMsg',e.message,true)}
+}
+function downloadStaffCSV(){
+  const sid=$('staffSelect')?.value,name=$('staffName')?.value.trim(),month=$('staffMonth')?.value;if(!sid||!name||!month)return msg('staffMsg','पहले Staff और month चुनें।',true);db.ref('staffRecords/'+sid+'/'+month).once('value').then(s=>{const x=s.val()||{},abs=Object.keys(x.absent||{}).sort(),adv=Object.values(x.advances||{}),rows=[['Staff Name','Month','Absent Date','Advance Date','Advance Amount']];const n=Math.max(abs.length,adv.length,1);for(let i=0;i<n;i++)rows.push([name,month,abs[i]||'',adv[i]?.date||'',adv[i]?.amount||'']);const csv='\ufeff'+rows.map(r=>r.map(csvCell).join(',')).join('\n'),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='Shree_Ram_Dairy_Staff_'+staffKey(name)+'_'+month+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}).catch(e=>msg('staffMsg',e.message,true))}
+function downloadStaffPDF(){if(!window.jspdf)return msg('staffMsg','PDF tool load नहीं हुआ।',true);const sid=$('staffSelect')?.value,name=$('staffName')?.value.trim(),month=$('staffMonth')?.value;if(!sid||!name||!month)return msg('staffMsg','पहले Staff और month चुनें।',true);db.ref('staffRecords/'+sid+'/'+month).once('value').then(s=>{const x=s.val()||{},abs=Object.keys(x.absent||{}).sort(),adv=Object.values(x.advances||{}),salary=Number(x.meta?.salary||0),days=Number(x.meta?.days||30),totalAdv=adv.reduce((a,v)=>a+Number(v.amount||0),0),ded=days?salary/days*abs.length:0,rem=Math.max(0,salary-ded-totalAdv),{jsPDF}=window.jspdf,p=new jsPDF({unit:'mm',format:'a4'});let y=18;p.setFontSize(16);p.text('SHREE RAM DAIRY - STAFF MONTHLY REPORT',105,y,{align:'center'});y+=10;p.setFontSize(10);[['Staff Name',name],['Month',month],['Salary','₹'+Math.round(salary)],['Days in Month',days],['Total Absent',abs.length],['Absent Deduction','₹'+Math.round(ded)],['Total Advance','₹'+Math.round(totalAdv)],['Remaining Salary','₹'+Math.round(rem)]].forEach(a=>{p.text(a[0]+':',15,y);p.text(String(a[1]),65,y);y+=6});y+=4;p.setFontSize(11);p.text('Absent Dates',15,y);y+=6;p.setFontSize(9);p.text(abs.length?abs.join(', '):'None',15,y,{maxWidth:175});y+=12;p.setFontSize(11);p.text('Advance Entries',15,y);y+=6;p.setFontSize(9);adv.forEach(a=>{p.text((a.date||'')+'   ₹'+Math.round(a.amount||0),15,y);y+=5});p.save('Shree_Ram_Dairy_Staff_'+staffKey(name)+'_'+month+'.pdf')}).catch(e=>msg('staffMsg',e.message,true))}
+async function saveLocalSettings(){
+  try{if(!auth.currentUser)return msg('settingsCard','पहले Staff Login करें।',true);const rate=Number($('adminMilkRate')?.value||70),wa=String($('whatsappNumber')?.value||'').replace(/\D/g,'');await db.ref('settings').update({milkRate:rate,whatsapp:wa,updatedAt:firebase.database.ServerValue.TIMESTAMP,updatedBy:auth.currentUser.email});localStorage.setItem('srd_milk_rate',rate);localStorage.setItem('srd_whatsapp',wa);msg('settingsCard','Settings online save हो गईं ✅')}catch(e){msg('settingsCard',e.message,true)}
+}
+// Initialize stable defaults and modules without deleting any stored data.
+setTimeout(()=>{try{if($('expenseDate')&&!$('expenseDate').value)$('expenseDate').value=new Date().toISOString().slice(0,10);if($('staffMonth')&&!$('staffMonth').value)$('staffMonth').value=new Date().toISOString().slice(0,7);loadStaffList();loadStock();loadFinance();}catch(e){}},700);
+
 </script>
 </body>
 </html>
