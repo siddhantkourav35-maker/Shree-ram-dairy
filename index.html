@@ -465,11 +465,15 @@ function closePage(){
 function openModuleNewTab(id,title,mode){
   const url=new URL(window.location.href);
   url.hash='page='+encodeURIComponent(id)+(mode?'&mode='+encodeURIComponent(mode):'');
-  const w=window.open(url.toString(),'_blank','noopener');
+  // iPhone Safari/Chrome can treat the `noopener` feature string as a blocked popup
+  // and return null even when a new tab was created. Do not use that feature string.
+  const w=window.open(url.toString(),'_blank');
   if(!w){
-    // Browser blocked a new tab: use the same tab, still opening at the top.
-    window.location.href=url.toString();
+    // If the browser really blocks new tabs, do not change the current Home URL.
+    // The user can enable Allow Pop-ups; Home should never be replaced by a hash URL.
+    return;
   }
+  try{ w.opener=null; }catch(e){}
 }
 function handlePageHash(){
   const raw=String(location.hash||'').replace(/^#/,'');
