@@ -414,34 +414,47 @@ function applyRolePermissions(){const isAdmin=String(auth.currentUser?.email||''
 auth.onAuthStateChanged(u=>{if(u){setTimeout(()=>{applyRolePermissions();checkBackupReminder();loadStaffList()},400)}});
 setTimeout(()=>{const s=$('settingsCard'),r=$('reportCard'),b=$('backupCard');[s,r,b].forEach(x=>{if(x)x.setAttribute('data-admin-only','1')});applyRolePermissions();},200);
 
-// ===== FULL PAGE NAVIGATION (NO SCROLL) =====
+// ===== FULL PAGE NAVIGATION + NEW TAB (FINAL) =====
 let activePageId=null;
-function openPage(id,title){
+function showPage(id,title){
   const target=$(id); if(!target)return;
   document.body.classList.add('page-mode');
   document.querySelectorAll('.module-card').forEach(x=>x.classList.remove('page-active'));
   target.classList.add('page-active');
   let back=target.querySelector('.page-back');
-  if(!back){back=document.createElement('div');back.className='page-back';back.innerHTML='<button type="button" onclick="closePage()">←</button><span></span>';target.prepend(back);}
+  if(!back){
+    back=document.createElement('div');
+    back.className='page-back';
+    back.innerHTML='<button type="button" onclick="closePage()">←</button><span></span>';
+    target.prepend(back);
+  }
   back.querySelector('span').textContent=title||'Page';
   activePageId=id;
   window.scrollTo(0,0);
-  if(id==='billingCard')loadBillHistory();
-  if(id==='staffCard')loadStaffList();
+  target.scrollTop=0;
+  if(id==='billingCard' && typeof loadBillHistory==='function')loadBillHistory();
+  if(id==='staffCard' && typeof loadStaffList==='function')loadStaffList();
+}
+function openPage(id,title){
+  // All module/page buttons open a separate tab. Home remains the only main page.
+  openModuleNewTab(id,title);
 }
 function closePage(){
+  // Return this tab to the home screen at the very top.
+  if(location.hash){
+    history.replaceState(null,'',location.pathname+location.search);
+  }
   document.body.classList.remove('page-mode');
   document.querySelectorAll('.module-card').forEach(x=>x.classList.remove('page-active'));
   activePageId=null;
   window.scrollTo(0,0);
 }
-
 function openModuleNewTab(id,title,mode){
   const url=new URL(window.location.href);
   url.hash='page='+encodeURIComponent(id)+(mode?'&mode='+encodeURIComponent(mode):'');
   const w=window.open(url.toString(),'_blank','noopener');
   if(!w){
-    // If the browser blocks a new tab, open the same page at the top instead.
+    // Browser blocked a new tab: use the same tab, still opening at the top.
     window.location.href=url.toString();
   }
 }
@@ -451,16 +464,25 @@ function handlePageHash(){
   const q=new URLSearchParams(raw);
   const id=q.get('page');
   if(!id || !$('app'))return;
-  const titles={billingCard:'Billing / Sales',stockCard:'Stock',financeCard:'Expense / Profit',staffCard:'Staff Monthly Record',reportCard:'Reports',settingsCard:'Settings',backupCard:'Backup & Security',customerSearchCard:'Customers',scanCard:'QR Scan'};
+  const titles={billingCard:'Billing / Sales',stockCard:'Stock',financeCard:'Expense / Profit',staffCard:'Staff Monthly Record',reportCard:'Reports',settingsCard:'Settings',backupCard:'Backup & Security',customerSearchCard:'Customers',scanCard:'QR Scan',customerCard:'Customer',newCustomerCard:'New Customer'};
   setTimeout(()=>{
-    openPage(id,titles[id]||'Page');
+    showPage(id,titles[id]||'Page');
     window.scrollTo(0,0);
     const mode=q.get('mode');
-    if(mode==='new')setTimeout(()=>{if(typeof showNewCustomer==='function'){ $('newCustomerCard')?.classList.remove('hidden'); $('customerCard')?.classList.add('hidden'); window.scrollTo(0,0); }},150);
-    if(mode==='product=Milk'||mode==='product=Dahi'||mode==='product=Paneer'||mode==='product=Khoba'||mode==='product=Ghee'||mode==='product=Makhan'||mode==='product=Matar')setTimeout(()=>quickAddProduct(mode.split('=')[1]),350);
-  },500);
+    if(mode==='new')setTimeout(()=>{
+      if(typeof showNewCustomer==='function'){
+        $('newCustomerCard')?.classList.remove('hidden');
+        $('customerCard')?.classList.add('hidden');
+        window.scrollTo(0,0);
+      }
+    },150);
+    if(['Milk','Dahi','Paneer','Khoba','Ghee','Makhan','Matar'].includes(mode)){
+      setTimeout(()=>{if(typeof quickAddProduct==='function')quickAddProduct(mode)},350);
+    }
+  },100);
 }
-window.addEventListener('hashchange',()=>{handlePageHash()});
+window.addEventListener('hashchange',handlePageHash);
+document.addEventListener('DOMContentLoaded',handlePageHash);
 
 // ===== SYSTEMATIC STABILITY LAYER =====
 // All operational buttons are defined here so every locked UI control has a working handler.
