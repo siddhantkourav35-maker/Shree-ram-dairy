@@ -172,17 +172,18 @@ body.page-mode .page-active .table-scroll td{
  <div id="expenseTable" style="margin-top:10px"></div><div id="financeMsg"></div>
 </div>
 <div id="staffCard" class="card module-card">
- <div class="section-title">👷 Staff Monthly Hisab</div>
- <div class="muted">केवल Absent • Half Day • Advance • Staff ने लिया सामान दर्ज करें। Present लगाने की जरूरत नहीं है। पुराने records delete नहीं होंगे।</div>
+ <div class="section-title">👷 Staff Monthly Hisab</div><div class="muted">केवल Absent • Half Day • Advance • Staff ने लिया सामान। पुराने records delete नहीं होंगे।</div>
  <div class="row"><select id="staffSelect" onchange="selectStaff(this.value)"><option value="">-- Staff चुनें --</option></select><button class="secondary" onclick="showNewStaffForm()">➕ New Staff</button></div>
  <div id="newStaffBox" class="notice" style="display:none"><div class="row"><input id="newStaffName" placeholder="New Staff Name"><input id="newStaffMobile" placeholder="Mobile (optional)"></div><button onclick="addNewStaff()">✅ Staff Add करें</button></div>
- <div class="row"><input id="staffName" placeholder="Staff Name" readonly><input id="staffStartDate" type="date" onchange="staffStartDateChanged()"></div>
- <div class="row"><input id="staffMonth" type="month" onchange="staffMonthChanged()"><input id="staffMonthlySalary" type="number" min="0" placeholder="Monthly Salary ₹" onchange="loadStaffRecord()"></div>
- <div class="row"><input id="staffDaysInMonth" type="number" min="1" readonly placeholder="Working Days"></div>
- <div class="notice" style="margin-top:8px"><b>❌ Absent</b><div class="row"><input id="staffAbsentDate" type="date"><button onclick="addStaffAbsent()">Absent जोड़ें</button></div></div>
- <div class="notice" style="margin-top:8px"><b>🕐 Half Day</b><div class="row"><input id="staffHalfDayDate" type="date"><button onclick="addStaffHalfDay()">Half Day जोड़ें</button></div></div>
- <div class="notice" style="margin-top:8px"><b>💰 Advance</b><div class="row"><input id="staffAdvanceDate" type="date"><input id="staffAdvance" type="number" min="0" placeholder="Advance ₹"><button onclick="addStaffAdvance()">Advance जोड़ें</button></div></div>
- <div class="notice" style="margin-top:8px"><b>🥛 Staff ने सामान लिया</b><div class="row"><input id="staffProductDate" type="date"><select id="staffProduct" onchange="updateStaffProductRate()"></select><input id="staffProductQty" type="number" min="0" step="0.01" value="1" placeholder="Qty" onchange="updateStaffProductAmount()"><input id="staffProductRate" type="number" min="0" step="0.01" placeholder="Rate" onchange="updateStaffProductAmount()"></div><div class="muted">Amount: ₹<b id="staffProductAmount">0</b></div><button onclick="addStaffProduct()">सामान की Entry जोड़ें</button></div>
+ <div class="row"><input id="staffName" placeholder="Staff Name" readonly><input id="staffStartDate" type="date" title="Work Start Date"></div>
+ <div class="row"><input id="staffMonth" type="month" onchange="staffMonthChanged()"><input id="staffMonthlySalary" type="number" min="0" placeholder="Monthly Salary ₹"></div>
+ <div class="row"><input id="staffDaysInMonth" type="number" min="1" placeholder="Working Days" readonly></div>
+ <div class="section-title" style="font-size:16px">❌ Absent</div><div class="row"><input id="staffAbsentDate" type="date"><button onclick="addStaffAbsent()">❌ Absent जोड़ें</button></div>
+ <div class="section-title" style="font-size:16px">🕐 Half Day</div><div class="row"><input id="staffHalfDayDate" type="date"><button onclick="addStaffHalfDay()">🕐 Half Day जोड़ें</button></div>
+ <div class="section-title" style="font-size:16px">💰 Advance</div><div class="row"><input id="staffAdvanceDate" type="date"><input id="staffAdvance" type="number" min="0" placeholder="Advance ₹"><button onclick="addStaffAdvance()">💰 Advance जोड़ें</button></div>
+ <div class="section-title" style="font-size:16px">🥛 Staff ने सामान लिया</div><div class="row"><input id="staffProductDate" type="date"><select id="staffProduct" onchange="updateStaffProductRate()"></select></div>
+ <div class="row"><input id="staffProductQty" type="number" min="0.01" step="0.01" value="1" placeholder="Quantity" oninput="updateStaffProductAmount()"><input id="staffProductRate" type="number" min="0" step="0.01" placeholder="Rate" oninput="updateStaffProductAmount()"><button onclick="addStaffProduct()">🥛 सामान जोड़ें</button></div>
+ <div class="muted">Amount: ₹<b id="staffProductAmount">0</b></div>
  <button onclick="saveStaffMeta()">💾 Save / Update</button><button class="secondary" onclick="loadStaffRecord()">🔄 View Record</button><button class="secondary" onclick="downloadStaffCSV()">📄 CSV</button><button class="secondary" onclick="downloadStaffPDF()">📄 PDF</button>
  <div id="staffMsg"></div><div id="staffTable"></div>
 </div>
@@ -763,143 +764,29 @@ async function loadFinance(){
   try{const today=new Date().toISOString().slice(0,10);let sales=0,expense=0,rows=[];const bs=await db.ref('bills').once('value');bs.forEach(c=>{const b=c.val()||{};if(b.at){const d=new Date(b.at);if(!isNaN(d.getTime())&&d.toISOString().slice(0,10)===today)sales+=Number(b.received||0)}});const es=await db.ref('expenses').once('value');es.forEach(c=>{const x=c.val()||{};rows.push(x);if(String(x.date)===today)expense+=Number(x.amount||0)});$('finSales').textContent='₹'+Math.round(sales);$('finExpense').textContent='₹'+Math.round(expense);$('finProfit').textContent='₹'+Math.round(sales-expense);rows.sort((a,b)=>String(b.date).localeCompare(String(a.date)));$('expenseTable').innerHTML=rows.length?'<table><tr><th>Date</th><th>Expense</th><th>Amount</th><th>Note</th></tr>'+rows.slice(0,50).map(x=>'<tr><td>'+esc(x.date)+'</td><td>'+esc(x.name)+'</td><td>₹'+Math.round(x.amount||0)+'</td><td>'+esc(x.note||'')+'</td></tr>').join('')+'</table>':'<span class="muted">अभी expense record नहीं है।</span>'}catch(e){msg('financeMsg',e.message,true)}
 }
 function staffKey(name){return String(name||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'_')}
-function staffDaysForMonth(month){
-  if(!month)return 0;
-  const [y,m]=String(month).split('-').map(Number);
-  if(!y||!m)return 0;
-  return new Date(y,m,0).getDate();
-}
-function staffSetTodayDefaults(){
-  const today=new Date().toISOString().slice(0,10);
-  ['staffAbsentDate','staffHalfDayDate','staffAdvanceDate','staffProductDate'].forEach(id=>{const el=$(id);if(el&&!el.value)el.value=today});
-}
-function staffMonthChanged(){
-  const month=$('staffMonth')?.value;const days=staffDaysForMonth(month);if($('staffDaysInMonth'))$('staffDaysInMonth').value=days||'';
-  staffSetTodayDefaults(); loadStaffRecord();
-}
+function staffDaysForMonth(month){if(!month)return 0;const [y,m]=String(month).split('-').map(Number);return y&&m?new Date(y,m,0).getDate():0}
+function staffSetTodayDefaults(){const t=new Date().toISOString().slice(0,10);['staffAbsentDate','staffHalfDayDate','staffAdvanceDate','staffProductDate'].forEach(id=>{const e=$(id);if(e&&!e.value)e.value=t})}
+function staffMonthChanged(){const m=$('staffMonth')?.value,d=staffDaysForMonth(m);if($('staffDaysInMonth'))$('staffDaysInMonth').value=d||'';staffSetTodayDefaults();loadStaffRecord()}
 function staffStartDateChanged(){loadStaffRecord()}
-function populateStaffProducts(){
-  const sel=$('staffProduct');if(!sel)return;
-  sel.innerHTML=BILL_PRODUCTS.map(p=>'<option value="'+esc(p[0])+'" data-unit="'+esc(p[1])+'" data-rate="'+Number(p[2])+'">'+esc(p[0])+' ('+esc(p[1])+')</option>').join('');
-  updateStaffProductRate();
-}
-function updateStaffProductRate(){
-  const sel=$('staffProduct');if(!sel)return;const o=sel.options[sel.selectedIndex];
-  if($('staffProductRate'))$('staffProductRate').value=o?Number(o.dataset.rate||0):0;
-  updateStaffProductAmount();
-}
-function updateStaffProductAmount(){
-  const q=Number($('staffProductQty')?.value||0),r=Number($('staffProductRate')?.value||0);
-  if($('staffProductAmount'))$('staffProductAmount').textContent=Math.round(q*r*100)/100;
-}
-async function loadStaffList(){
-  try{
-    const snap=await db.ref('staffProfiles').once('value');
-    const sel=$('staffSelect');if(!sel)return;
-    const rows=[];snap.forEach(c=>{const x=c.val()||{};rows.push({id:c.key,...x})});
-    rows.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));
-    sel.innerHTML='<option value="">-- Staff चुनें --</option>'+rows.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name||'')+(x.mobile?' • '+esc(x.mobile):'')+'</option>').join('');
-    populateStaffProducts();staffSetTodayDefaults();
-  }catch(e){msg('staffMsg',e.message,true)}
-}
+function populateStaffProducts(){const sel=$('staffProduct');if(!sel)return;sel.innerHTML=BILL_PRODUCTS.map(p=>'<option value="'+esc(p[0])+'" data-unit="'+esc(p[1])+'" data-rate="'+Number(p[2])+'">'+esc(p[0])+' ('+esc(p[1])+')</option>').join('');updateStaffProductRate()}
+function updateStaffProductRate(){const sel=$('staffProduct');if(!sel)return;const o=sel.options[sel.selectedIndex];if($('staffProductRate'))$('staffProductRate').value=o?Number(o.dataset.rate||0):0;updateStaffProductAmount()}
+function updateStaffProductAmount(){const q=Number($('staffProductQty')?.value||0),r=Number($('staffProductRate')?.value||0);if($('staffProductAmount'))$('staffProductAmount').textContent=Math.round(q*r*100)/100}
+async function loadStaffList(){try{const snap=await db.ref('staffProfiles').once('value'),sel=$('staffSelect');if(!sel)return;const rows=[];snap.forEach(c=>{const x=c.val()||{};rows.push({id:c.key,...x})});rows.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));sel.innerHTML='<option value="">-- Staff चुनें --</option>'+rows.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name||'')+(x.mobile?' • '+esc(x.mobile):'')+'</option>').join('');populateStaffProducts();staffSetTodayDefaults();if($('staffMonth')&&!$('staffMonth').value)$('staffMonth').value=new Date().toISOString().slice(0,7);if($('staffDaysInMonth'))$('staffDaysInMonth').value=staffDaysForMonth($('staffMonth')?.value)||''}catch(e){msg('staffMsg',e.message,true)}}
 function showNewStaffForm(){const b=$('newStaffBox');if(b)b.style.display='block';$('newStaffName')?.focus()}
-async function addNewStaff(){
-  try{
-    if(!auth.currentUser)return msg('staffMsg','पहले Staff Login करें।',true);
-    const name=$('newStaffName')?.value.trim(),mobile=$('newStaffMobile')?.value.trim()||'';
-    if(!name)return msg('staffMsg','Staff name भरें।',true);
-    const id='STF-'+Math.random().toString(36).slice(2,8).toUpperCase();
-    await db.ref('staffProfiles/'+id).set({name,mobile,createdAt:firebase.database.ServerValue.TIMESTAMP,createdBy:auth.currentUser.email,active:true});
-    await loadStaffList();$('staffSelect').value=id;await selectStaff(id);$('newStaffName').value='';$('newStaffMobile').value='';$('newStaffBox').style.display='none';msg('staffMsg','New Staff अलग profile में add हो गया ✅ — '+name);
-  }catch(e){msg('staffMsg',e.message,true)}
-}
-async function selectStaff(id){
-  if(!id){$('staffName').value='';$('staffTable').innerHTML='';return;}
-  try{const s=await db.ref('staffProfiles/'+id).once('value');const x=s.val()||{};$('staffName').value=x.name||'';await loadStaffRecord();}catch(e){msg('staffMsg',e.message,true)}
-}
-async function saveStaffMeta(){
-  try{
-    if(!auth.currentUser)return msg('staffMsg','पहले Staff Login करें।',true);
-    const sid=$('staffSelect')?.value,name=$('staffName')?.value.trim(),month=$('staffMonth')?.value,startDate=$('staffStartDate')?.value,salary=Number($('staffMonthlySalary')?.value||0),days=staffDaysForMonth(month);
-    if(!sid||!name||!month||!salary)return msg('staffMsg','Staff, Month और Monthly Salary भरें।',true);
-    if($('staffDaysInMonth'))$('staffDaysInMonth').value=days;
-    await db.ref('staffRecords/'+sid+'/'+month+'/meta').update({staffId:sid,name,month,startDate:startDate||'',salary,days,updatedAt:firebase.database.ServerValue.TIMESTAMP,updatedBy:auth.currentUser.email});
-    msg('staffMsg','Staff month details save हो गए ✅');loadStaffRecord();
-  }catch(e){msg('staffMsg',e.message,true)}
-}
-async function addStaffLedgerEntry(entry){
-  if(!auth.currentUser)return msg('staffMsg','पहले Staff Login करें।',true);
-  const sid=$('staffSelect')?.value,name=$('staffName')?.value.trim(),month=$('staffMonth')?.value;
-  if(!sid||!name||!month)return msg('staffMsg','पहले Staff और Month चुनें।',true);
-  const salary=Number($('staffMonthlySalary')?.value||0),days=staffDaysForMonth(month),startDate=$('staffStartDate')?.value||'';
-  if(!salary)return msg('staffMsg','पहले Monthly Salary भरकर Save / Update करें।',true);
-  if($('staffDaysInMonth'))$('staffDaysInMonth').value=days;
-  const ref=db.ref('staffRecords/'+sid+'/'+month);
-  await ref.child('meta').update({staffId:sid,name,month,startDate,salary,days,updatedAt:firebase.database.ServerValue.TIMESTAMP,updatedBy:auth.currentUser.email});
-  await ref.child('entries').push({...entry,by:auth.currentUser.email,at:firebase.database.ServerValue.TIMESTAMP});
-  await loadStaffRecord();
-}
-async function addStaffAbsent(){
-  try{const date=$('staffAbsentDate')?.value;if(!date)return msg('staffMsg','Absent date चुनें।',true);await addStaffLedgerEntry({type:'absent',date,amount:0});$('staffAbsentDate').value='';msg('staffMsg','Absent entry save हो गई ✅')}catch(e){msg('staffMsg',e.message,true)}
-}
-async function addStaffHalfDay(){
-  try{const date=$('staffHalfDayDate')?.value;if(!date)return msg('staffMsg','Half Day date चुनें।',true);await addStaffLedgerEntry({type:'half_day',date,amount:0});$('staffHalfDayDate').value='';msg('staffMsg','Half Day entry save हो गई ✅')}catch(e){msg('staffMsg',e.message,true)}
-}
-async function addStaffAdvance(){
-  try{const date=$('staffAdvanceDate')?.value,amount=Number($('staffAdvance')?.value||0);if(!date||amount<=0)return msg('staffMsg','Advance की date और amount भरें।',true);await addStaffLedgerEntry({type:'advance',date,amount});$('staffAdvance').value='';msg('staffMsg','Advance entry save हो गई ✅')}catch(e){msg('staffMsg',e.message,true)}
-}
-async function addStaffProduct(){
-  try{
-    const date=$('staffProductDate')?.value,product=$('staffProduct')?.value,qty=Number($('staffProductQty')?.value||0),rate=Number($('staffProductRate')?.value||0),amount=Math.round(qty*rate*100)/100;
-    if(!date||!product||qty<=0||rate<0)return msg('staffMsg','Product, date और quantity सही भरें।',true);
-    const sel=$('staffProduct'),unit=sel?.options[sel.selectedIndex]?.dataset.unit||'';
-    await addStaffLedgerEntry({type:'product',date,product,unit,qty,rate,amount});
-    $('staffProductQty').value=1;updateStaffProductRate();msg('staffMsg',product+' की entry save हो गई ✅');
-  }catch(e){msg('staffMsg',e.message,true)}
-}
-function staffLegacyEntries(x){
-  const out=[];
-  Object.keys(x.absent||{}).sort().forEach(date=>out.push({type:'absent',date,amount:0,legacy:true}));
-  Object.values(x.advances||{}).forEach(v=>out.push({type:'advance',date:v.date||'',amount:Number(v.amount||0),legacy:true}));
-  return out;
-}
-function staffEntryLabel(e){
-  if(e.type==='absent')return ['❌ Absent','₹'+Math.round(e.amount||0)];
-  if(e.type==='half_day')return ['🕐 Half Day','₹'+Math.round(e.amount||0)];
-  if(e.type==='advance')return ['💰 Advance','₹'+Math.round(e.amount||0)];
-  if(e.type==='product')return ['🥛 '+String(e.product||'Product')+' '+(e.qty??'')+' '+String(e.unit||''),'₹'+Math.round(e.amount||0)];
-  return [String(e.type||''), '₹'+Math.round(e.amount||0)];
-}
-async function getStaffLedger(){
-  const sid=$('staffSelect')?.value,month=$('staffMonth')?.value;if(!sid||!month)return {x:{},entries:[]};
-  const s=await db.ref('staffRecords/'+sid+'/'+month).once('value'),x=s.val()||{};
-  const entries=staffLegacyEntries(x);Object.values(x.entries||{}).forEach(e=>entries.push(e));
-  entries.sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
-  return {x,entries};
-}
-async function loadStaffRecord(){
-  try{
-    const sid=$('staffSelect')?.value,name=$('staffName')?.value.trim(),month=$('staffMonth')?.value;if(!sid||!name||!month)return;
-    const {x,entries}=await getStaffLedger();
-    const salary=Number(x.meta?.salary||$('staffMonthlySalary')?.value||0),days=Number(x.meta?.days||staffDaysForMonth(month)||30);
-    if($('staffMonthlySalary')&&x.meta?.salary)$('staffMonthlySalary').value=x.meta.salary;
-    if($('staffStartDate')&&x.meta?.startDate)$('staffStartDate').value=x.meta.startDate;
-    if($('staffDaysInMonth'))$('staffDaysInMonth').value=days;
-    const absent=entries.filter(e=>e.type==='absent').length,half=entries.filter(e=>e.type==='half_day').length;
-    const advance=entries.filter(e=>e.type==='advance').reduce((a,e)=>a+Number(e.amount||0),0),products=entries.filter(e=>e.type==='product').reduce((a,e)=>a+Number(e.amount||0),0);
-    const perDay=days?salary/days:0,absDed=perDay*absent,halfDed=perDay*.5*half,final=salary-absDed-halfDed-advance-products;
-    const rows=entries.length?'<div style="overflow:auto"><table><tr><th>Date</th><th>Type</th><th>Detail</th><th>Amount</th></tr>'+entries.map(e=>{const l=staffEntryLabel(e);return '<tr><td>'+esc(e.date||'')+'</td><td>'+esc(l[0])+'</td><td>'+esc(e.product?((e.qty??'')+' '+(e.unit||'')+' × ₹'+(e.rate??'')):l[0])+'</td><td>₹'+Math.round(e.type==='absent'||e.type==='half_day'?0:e.amount||0)+'</td></tr>'}).join('')+'</table></div>':'<div class="muted">अभी कोई entry नहीं है।</div>';
-    $('staffTable').innerHTML='<div class="customer-box"><b>'+esc(name)+'</b><br>Work Start Date: '+esc(x.meta?.startDate||'-')+'<br>Month: '+esc(month)+'<br><br><div class="finance-grid"><div><span>Salary</span><b>₹'+Math.round(salary)+'</b></div><div><span>Absent</span><b>'+absent+'</b></div><div><span>Half Day</span><b>'+half+'</b></div><div><span>Absent Deduction</span><b>₹'+Math.round(absDed)+'</b></div><div><span>Half Day Deduction</span><b>₹'+Math.round(halfDed)+'</b></div><div><span>Total Advance</span><b>₹'+Math.round(advance)+'</b></div><div><span>Total Product</span><b>₹'+Math.round(products)+'</b></div><div><span>Final Salary Payable</span><b>₹'+Math.round(final)+'</b></div></div></div><div class="section-title" style="margin-top:14px">📋 Detailed Ledger</div>'+rows;
-  }catch(e){msg('staffMsg',e.message,true)}
-}
-function downloadStaffCSV(){
-  const sid=$('staffSelect')?.value,name=$('staffName')?.value.trim(),month=$('staffMonth')?.value;if(!sid||!name||!month)return msg('staffMsg','पहले Staff और month चुनें।',true);
-  getStaffLedger().then(({x,entries})=>{const salary=Number(x.meta?.salary||0),days=Number(x.meta?.days||staffDaysForMonth(month)||30),abs=entries.filter(e=>e.type==='absent').length,half=entries.filter(e=>e.type==='half_day').length,adv=entries.filter(e=>e.type==='advance').reduce((a,e)=>a+Number(e.amount||0),0),prod=entries.filter(e=>e.type==='product').reduce((a,e)=>a+Number(e.amount||0),0),per=days?salary/days:0,final=salary-per*abs-per*.5*half-adv-prod,rows=[['Staff Name','Month','Work Start Date','Date','Type','Detail','Amount']];entries.forEach(e=>{const l=staffEntryLabel(e);rows.push([name,month,x.meta?.startDate||'',e.date||'',l[0],e.product?((e.qty??'')+' '+(e.unit||'')+' x ₹'+(e.rate??'')):l[0],e.type==='absent'||e.type==='half_day'?0:e.amount||0])});rows.push([]);rows.push(['Salary','','','', 'Final Salary Payable','',Math.round(final)]);const csv='\ufeff'+rows.map(r=>r.map(csvCell).join(',')).join('\n'),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='Shree_Ram_Dairy_Staff_'+staffKey(name)+'_'+month+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}).catch(e=>msg('staffMsg',e.message,true));
-}
-function downloadStaffPDF(){
-  if(!window.jspdf)return msg('staffMsg','PDF tool load नहीं हुआ।',true);const sid=$('staffSelect')?.value,name=$('staffName')?.value.trim(),month=$('staffMonth')?.value;if(!sid||!name||!month)return msg('staffMsg','पहले Staff और month चुनें।',true);
-  getStaffLedger().then(({x,entries})=>{const salary=Number(x.meta?.salary||0),days=Number(x.meta?.days||staffDaysForMonth(month)||30),abs=entries.filter(e=>e.type==='absent').length,half=entries.filter(e=>e.type==='half_day').length,adv=entries.filter(e=>e.type==='advance').reduce((a,e)=>a+Number(e.amount||0),0),prod=entries.filter(e=>e.type==='product').reduce((a,e)=>a+Number(e.amount||0),0),per=days?salary/days:0,absDed=per*abs,halfDed=per*.5*half,final=salary-absDed-halfDed-adv-prod,{jsPDF}=window.jspdf,p=new jsPDF({unit:'mm',format:'a4'});let y=18;p.setFontSize(16);p.text('SHREE RAM DAIRY - STAFF MONTHLY REPORT',105,y,{align:'center'});y+=10;p.setFontSize(10);[['Staff Name',name],['Work Start Date',x.meta?.startDate||'-'],['Month',month],['Salary','₹'+Math.round(salary)],['Days in Month',days],['Total Absent',abs],['Half Day',half],['Absent Deduction','₹'+Math.round(absDed)],['Half Day Deduction','₹'+Math.round(halfDed)],['Total Advance','₹'+Math.round(adv)],['Total Product Value','₹'+Math.round(prod)],['Final Salary Payable','₹'+Math.round(final)]].forEach(a=>{p.text(a[0]+':',15,y);p.text(String(a[1]),75,y);y+=6});y+=5;p.setFontSize(11);p.text('Detailed Ledger',15,y);y+=6;p.setFontSize(9);entries.forEach(e=>{if(y>280){p.addPage();y=18}const l=staffEntryLabel(e),detail=e.product?((e.qty??'')+' '+(e.unit||'')+' x ₹'+(e.rate??'')):l[0];p.text(String(e.date||'')+'   '+String(l[0])+'   '+String(detail),15,y);y+=5});p.save('Shree_Ram_Dairy_Staff_'+staffKey(name)+'_'+month+'.pdf')}).catch(e=>msg('staffMsg',e.message,true));
-}
+async function addNewStaff(){try{if(!auth.currentUser)return msg('staffMsg','पहले Staff Login करें।',true);const name=$('newStaffName')?.value.trim(),mobile=$('newStaffMobile')?.value.trim()||'';if(!name)return msg('staffMsg','Staff name भरें।',true);const id='STF-'+Math.random().toString(36).slice(2,8).toUpperCase();await db.ref('staffProfiles/'+id).set({name,mobile,createdAt:firebase.database.ServerValue.TIMESTAMP,createdBy:auth.currentUser.email,active:true});await loadStaffList();$('staffSelect').value=id;await selectStaff(id);$('newStaffName').value='';$('newStaffMobile').value='';$('newStaffBox').style.display='none';msg('staffMsg','New Staff अलग profile में add हो गया ✅ — '+name)}catch(e){msg('staffMsg',e.message,true)}}
+async function selectStaff(id){if(!id){$('staffName').value='';$('staffTable').innerHTML='';return}try{const s=await db.ref('staffProfiles/'+id).once('value'),x=s.val()||{};$('staffName').value=x.name||'';await loadStaffRecord()}catch(e){msg('staffMsg',e.message,true)}}
+async function saveStaffMeta(){try{if(!auth.currentUser)return msg('staffMsg','पहले Staff Login करें।',true);const sid=$('staffSelect')?.value,name=$('staffName')?.value.trim(),month=$('staffMonth')?.value,startDate=$('staffStartDate')?.value||'',salary=Number($('staffMonthlySalary')?.value||0),days=staffDaysForMonth(month);if(!sid||!name||!month||salary<=0)return msg('staffMsg','Staff, Month और Monthly Salary भरें।',true);if($('staffDaysInMonth'))$('staffDaysInMonth').value=days;await db.ref('staffRecords/'+sid+'/'+month+'/meta').update({staffId:sid,name,month,startDate,salary,days,updatedAt:firebase.database.ServerValue.TIMESTAMP,updatedBy:auth.currentUser.email});msg('staffMsg','Staff month details save हो गए ✅');await loadStaffRecord()}catch(e){msg('staffMsg',e.message,true)}}
+async function addStaffLedgerEntry(entry){if(!auth.currentUser)return msg('staffMsg','पहले Staff Login करें।',true);const sid=$('staffSelect')?.value,name=$('staffName')?.value.trim(),month=$('staffMonth')?.value,salary=Number($('staffMonthlySalary')?.value||0),days=staffDaysForMonth(month);if(!sid||!name||!month)return msg('staffMsg','पहले Staff और Month चुनें।',true);if(salary<=0)return msg('staffMsg','पहले Monthly Salary भरें और Save / Update करें।',true);const ref=db.ref('staffRecords/'+sid+'/'+month);await ref.child('meta').update({staffId:sid,name,month,startDate:$('staffStartDate')?.value||'',salary,days,updatedAt:firebase.database.ServerValue.TIMESTAMP,updatedBy:auth.currentUser.email});await ref.child('entries').push({...entry,by:auth.currentUser.email,at:firebase.database.ServerValue.TIMESTAMP});await loadStaffRecord()}
+async function addStaffAbsent(){try{const date=$('staffAbsentDate')?.value;if(!date)return msg('staffMsg','Absent date चुनें।',true);await addStaffLedgerEntry({type:'absent',date});$('staffAbsentDate').value='';msg('staffMsg','Absent entry save हो गई ✅')}catch(e){msg('staffMsg',e.message,true)}}
+async function addStaffHalfDay(){try{const date=$('staffHalfDayDate')?.value;if(!date)return msg('staffMsg','Half Day date चुनें।',true);await addStaffLedgerEntry({type:'half_day',date});$('staffHalfDayDate').value='';msg('staffMsg','Half Day entry save हो गई ✅')}catch(e){msg('staffMsg',e.message,true)}}
+async function addStaffAdvance(){try{const date=$('staffAdvanceDate')?.value,amount=Number($('staffAdvance')?.value||0);if(!date||amount<=0)return msg('staffMsg','Advance की date और amount भरें।',true);await addStaffLedgerEntry({type:'advance',date,amount});$('staffAdvance').value='';msg('staffMsg','Advance entry save हो गई ✅')}catch(e){msg('staffMsg',e.message,true)}}
+async function addStaffProduct(){try{const date=$('staffProductDate')?.value,product=$('staffProduct')?.value,qty=Number($('staffProductQty')?.value||0),rate=Number($('staffProductRate')?.value||0),amount=Math.round(qty*rate*100)/100;if(!date||!product||qty<=0||rate<0)return msg('staffMsg','Product, date और quantity सही भरें।',true);const sel=$('staffProduct'),unit=sel?.options[sel.selectedIndex]?.dataset.unit||'';await addStaffLedgerEntry({type:'product',date,product,unit,qty,rate,amount});$('staffProductQty').value=1;updateStaffProductRate();msg('staffMsg',product+' की entry save हो गई ✅')}catch(e){msg('staffMsg',e.message,true)}}
+function staffLegacyEntries(x){const out=[];Object.keys(x.absent||{}).sort().forEach(date=>out.push({type:'absent',date,legacy:true}));Object.values(x.advances||{}).forEach(v=>out.push({type:'advance',date:v.date||'',amount:Number(v.amount||0),legacy:true}));return out}
+function staffEntryLabel(e){if(e.type==='absent')return '❌ Absent';if(e.type==='half_day')return '🕐 Half Day';if(e.type==='advance')return '💰 Advance';if(e.type==='product')return '🥛 '+String(e.product||'Product')+' '+(e.qty??'')+' '+String(e.unit||'');return String(e.type||'')}
+async function getStaffLedger(){const sid=$('staffSelect')?.value,month=$('staffMonth')?.value;if(!sid||!month)return {x:{},entries:[]};const s=await db.ref('staffRecords/'+sid+'/'+month).once('value'),x=s.val()||{},entries=staffLegacyEntries(x);Object.values(x.entries||{}).forEach(e=>entries.push(e));entries.sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));return {x,entries}}
+async function loadStaffRecord(){try{const sid=$('staffSelect')?.value,name=$('staffName')?.value.trim(),month=$('staffMonth')?.value;if(!sid||!name||!month)return;const {x,entries}=await getStaffLedger(),salary=Number(x.meta?.salary||$('staffMonthlySalary')?.value||0),days=Number(x.meta?.days||staffDaysForMonth(month)||30);if($('staffMonthlySalary')&&x.meta?.salary)$('staffMonthlySalary').value=x.meta.salary;if($('staffStartDate')&&x.meta?.startDate)$('staffStartDate').value=x.meta.startDate;if($('staffDaysInMonth'))$('staffDaysInMonth').value=days;const absent=entries.filter(e=>e.type==='absent').length,half=entries.filter(e=>e.type==='half_day').length,advance=entries.filter(e=>e.type==='advance').reduce((a,e)=>a+Number(e.amount||0),0),products=entries.filter(e=>e.type==='product').reduce((a,e)=>a+Number(e.amount||0),0),perDay=days?salary/days:0,absDed=perDay*absent,halfDed=perDay*.5*half,final=salary-absDed-halfDed-advance-products;const rows=entries.length?'<div style="overflow:auto"><table><tr><th>Date</th><th>Type</th><th>Detail</th><th>Amount</th></tr>'+entries.map(e=>'<tr><td>'+esc(e.date||'')+'</td><td>'+esc(staffEntryLabel(e))+'</td><td>'+esc(e.type==='product'?((e.qty??'')+' '+(e.unit||'')+' × ₹'+(e.rate??'')):staffEntryLabel(e))+'</td><td>₹'+Math.round(e.type==='absent'||e.type==='half_day'?0:e.amount||0)+'</td></tr>').join('')+'</table></div>':'<div class="muted">अभी कोई entry नहीं है।</div>';$('staffTable').innerHTML='<div class="customer-box"><b>'+esc(name)+'</b><br>Work Start Date: '+esc(x.meta?.startDate||'-')+'<br>Month: '+esc(month)+'<br><br><div class="finance-grid"><div><span>Salary</span><b>₹'+Math.round(salary)+'</b></div><div><span>Absent</span><b>'+absent+'</b></div><div><span>Half Day</span><b>'+half+'</b></div><div><span>Absent Deduction</span><b>₹'+Math.round(absDed)+'</b></div><div><span>Half Day Deduction</span><b>₹'+Math.round(halfDed)+'</b></div><div><span>Total Advance</span><b>₹'+Math.round(advance)+'</b></div><div><span>Total Product</span><b>₹'+Math.round(products)+'</b></div><div><span>Final Salary Payable</span><b>₹'+Math.round(final)+'</b></div></div></div><div class="section-title" style="margin-top:14px">📋 Detailed Ledger</div>'+rows}catch(e){msg('staffMsg',e.message,true)}}
+function downloadStaffCSV(){const sid=$('staffSelect')?.value,name=$('staffName')?.value.trim(),month=$('staffMonth')?.value;if(!sid||!name||!month)return msg('staffMsg','पहले Staff और month चुनें।',true);getStaffLedger().then(({x,entries})=>{const salary=Number(x.meta?.salary||0),days=Number(x.meta?.days||staffDaysForMonth(month)||30),abs=entries.filter(e=>e.type==='absent').length,half=entries.filter(e=>e.type==='half_day').length,adv=entries.filter(e=>e.type==='advance').reduce((a,e)=>a+Number(e.amount||0),0),prod=entries.filter(e=>e.type==='product').reduce((a,e)=>a+Number(e.amount||0),0),per=days?salary/days:0,final=salary-per*abs-per*.5*half-adv-prod,rows=[['Staff Name','Month','Work Start Date','Date','Type','Detail','Amount']];entries.forEach(e=>rows.push([name,month,x.meta?.startDate||'',e.date||'',staffEntryLabel(e),e.type==='product'?((e.qty??'')+' '+(e.unit||'')+' x ₹'+(e.rate??'')):staffEntryLabel(e),e.type==='absent'||e.type==='half_day'?0:e.amount||0]));rows.push([]);rows.push(['Salary','','','','Final Salary Payable','',Math.round(final)]);const csv='\ufeff'+rows.map(r=>r.map(csvCell).join(',')).join('\n'),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='Shree_Ram_Dairy_Staff_'+staffKey(name)+'_'+month+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}).catch(e=>msg('staffMsg',e.message,true))}
+function downloadStaffPDF(){if(!window.jspdf)return msg('staffMsg','PDF tool load नहीं हुआ।',true);const sid=$('staffSelect')?.value,name=$('staffName')?.value.trim(),month=$('staffMonth')?.value;if(!sid||!name||!month)return msg('staffMsg','पहले Staff और month चुनें।',true);getStaffLedger().then(({x,entries})=>{const salary=Number(x.meta?.salary||0),days=Number(x.meta?.days||staffDaysForMonth(month)||30),abs=entries.filter(e=>e.type==='absent').length,half=entries.filter(e=>e.type==='half_day').length,adv=entries.filter(e=>e.type==='advance').reduce((a,e)=>a+Number(e.amount||0),0),prod=entries.filter(e=>e.type==='product').reduce((a,e)=>a+Number(e.amount||0),0),per=days?salary/days:0,absDed=per*abs,halfDed=per*.5*half,final=salary-absDed-halfDed-adv-prod,{jsPDF}=window.jspdf,p=new jsPDF({unit:'mm',format:'a4'});let y=18;p.setFontSize(16);p.text('SHREE RAM DAIRY - STAFF MONTHLY REPORT',105,y,{align:'center'});y+=10;p.setFontSize(10);[['Staff Name',name],['Work Start Date',x.meta?.startDate||'-'],['Month',month],['Salary','₹'+Math.round(salary)],['Days in Month',days],['Total Absent',abs],['Half Day',half],['Absent Deduction','₹'+Math.round(absDed)],['Half Day Deduction','₹'+Math.round(halfDed)],['Total Advance','₹'+Math.round(adv)],['Total Product Value','₹'+Math.round(prod)],['Final Salary Payable','₹'+Math.round(final)]].forEach(a=>{p.text(a[0]+':',15,y);p.text(String(a[1]),75,y);y+=6});y+=5;p.setFontSize(11);p.text('Detailed Ledger',15,y);y+=6;p.setFontSize(9);entries.forEach(e=>{if(y>280){p.addPage();y=18}const detail=e.type==='product'?((e.qty??'')+' '+(e.unit||'')+' x ₹'+(e.rate??'')):staffEntryLabel(e);p.text(String(e.date||'')+'   '+String(staffEntryLabel(e))+'   '+String(detail),15,y);y+=5});p.save('Shree_Ram_Dairy_Staff_'+staffKey(name)+'_'+month+'.pdf')}).catch(e=>msg('staffMsg',e.message,true))}
 async function saveLocalSettings(){
   try{if(!auth.currentUser)return msg('settingsMsg','पहले Staff Login करें।',true);const rate=Number($('adminMilkRate')?.value||70),wa=String($('whatsappNumber')?.value||'').replace(/\D/g,'');await db.ref('settings').update({milkRate:rate,whatsapp:wa,updatedAt:firebase.database.ServerValue.TIMESTAMP,updatedBy:auth.currentUser.email});RATE=rate;localStorage.setItem('srd_milk_rate',rate);localStorage.setItem('srd_whatsapp',wa);msg('settingsMsg','Settings online save हो गईं ✅')}catch(e){msg('settingsMsg',e.message,true)}
 }
