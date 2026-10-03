@@ -81,28 +81,6 @@ body.page-mode .page-active>.page-back{
 }
 body.page-mode .bottom-nav-final{display:none!important}
 
-
-/* ===== ONLY ADDITION: MOBILE LEFT/RIGHT TABLE SWIPE ===== */
-body.page-mode .page-active .table-scroll{
-  width:100%!important;
-  max-width:100%!important;
-  overflow-x:auto!important;
-  overflow-y:hidden!important;
-  -webkit-overflow-scrolling:touch!important;
-  overscroll-behavior-x:contain!important;
-  touch-action:pan-x pan-y!important;
-  padding-bottom:8px!important;
-}
-body.page-mode .page-active .table-scroll table{
-  min-width:760px!important;
-  width:max-content!important;
-  max-width:none!important;
-}
-body.page-mode .page-active .table-scroll th,
-body.page-mode .page-active .table-scroll td{
-  white-space:nowrap!important;
-}
-
 </style></head><body data-build="FINAL-LOCKED-HOME-CARD-2026-10-03"><div id="customerPortal" class="hidden"><div class="portal-brand"><div style="font-size:28px;font-weight:900">🥛 SHREE RAM DAIRY</div><div>Customer Self-Service • Gadarwara</div></div><main class="portal-wrap"><div class="card"><div class="muted">Customer ID</div><h2 id="portalName">Loading…</h2><div class="pill" id="portalId">-</div></div><div class="card"><div class="muted">Prepaid Milk Balance</div><div class="portal-balance" id="portalLitres">0 L</div><div class="muted">Balance Value: ₹<span id="portalBalance">0</span></div></div><div class="portal-grid"><div class="portal-stat"><span>Pending Due</span><b id="portalDue">₹0</b></div><div class="portal-stat"><span>Mobile</span><b id="portalMobile">-</b></div></div><div class="card"><h2>📋 Delivery & Payment History</h2><div class="portal-history" id="portalHistory">Loading…</div></div><div class="card"><div class="notice">🔒 यह customer portal read-only है। Recharge/payment के लिए Shree Ram Dairy से संपर्क करें।<br>📞 8871983383</div></div></main></div>
 <header class="top"><div class="wrap"><div class="brand">🥛 SHREE RAM DAIRY</div><div class="sub">📍 Gadarwara, Narsinghpur, Madhya Pradesh</div></div></header><main class="wrap"><div id="loginCard" class="card"><h2>Staff Login</h2><div class="muted">अधिकृत स्टाफ ही लॉगिन करें।</div><input id="email" type="email" placeholder="Staff email"><input id="password" type="password" placeholder="Password"><button id="loginBtn">Login</button><div id="loginMsg"></div></div><div id="historyCard" class="hiddenAnchor"></div><div id="app" class="hidden"><div id="dashboard"><div id="dataProtection" class="notice" style="margin-bottom:12px">🔒 <b>Data Protection:</b> Transaction, History और Reports append-only हैं। Website update से पुराना data delete नहीं होगा।</div>
 <div class="srd-home-final" id="homeScreen">
@@ -661,24 +639,6 @@ function initAppPages(){
   SRD_APP_PAGES.forEach(pid=>{const el=$(pid);if(el)el.style.display='none';});
   const home=$('homeScreen');if(home)home.style.display='';
 }
-
-
-// ===== ONLY ADDITION: WRAP TABLES FOR MOBILE SWIPE =====
-function makeTablesScrollable(root){
-  const scope=root||document;
-  scope.querySelectorAll('.page-active table').forEach(table=>{
-    if(table.parentElement && table.parentElement.classList.contains('table-scroll')) return;
-    const wrap=document.createElement('div');
-    wrap.className='table-scroll';
-    table.parentNode.insertBefore(wrap,table);
-    wrap.appendChild(table);
-  });
-}
-const srdTableObserver=new MutationObserver(()=>{
-  const active=document.querySelector('.page-active');
-  if(active) makeTablesScrollable(active);
-});
-srdTableObserver.observe(document.body,{childList:true,subtree:true});
 
 // ===== LIVE HOME STATS =====
 async function updateHomeStats(){
