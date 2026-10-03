@@ -53,8 +53,9 @@ body:not(.page-mode){overflow:auto!important}
 body.page-mode{overflow:hidden!important;height:100dvh!important}
 body.page-mode #app{height:100dvh!important;overflow:hidden!important}
 body.page-mode #dashboard{height:100dvh!important;overflow:hidden!important;padding:0!important}
-body.page-mode #dashboard> :not(.page-active){display:none!important}
-body.page-mode #dashboard>.page-active{
+body.page-mode #app{height:100dvh!important;overflow:hidden!important}
+body.page-mode .srd-home-final{display:none!important}
+body.page-mode .page-active{
   display:block!important;
   position:fixed!important;
   inset:0!important;
@@ -72,7 +73,7 @@ body.page-mode #dashboard>.page-active{
   overscroll-behavior:contain!important;
   scroll-behavior:auto!important;
 }
-body.page-mode #dashboard>.page-active>.page-back{
+body.page-mode .page-active>.page-back{
   position:sticky!important;
   top:0!important;
   z-index:100!important;
@@ -224,6 +225,7 @@ async function openCustomerPortal(cardId){
 const cardQuery=new URLSearchParams(location.search).get('card');
 if(cardQuery){document.addEventListener('DOMContentLoaded',()=>openCustomerPortal(cardQuery.trim().toUpperCase()));}
 
+try{initAppPages()}catch(e){}
 auth.onAuthStateChanged(u=>{if(cardQuery){$('loginCard').classList.add('hidden');$('app').classList.add('hidden');$('customerPortal').classList.remove('hidden');return;}if(u){$('loginCard').classList.add('hidden');$('app').classList.remove('hidden');$('userEmail').textContent=u.email||''}else{$('loginCard').classList.remove('hidden');$('app').classList.add('hidden')}});$('loginBtn').onclick=async()=>{try{await auth.signInWithEmailAndPassword($('email').value.trim(),$('password').value);msg('loginMsg','Login सफल ✅')}catch(e){msg('loginMsg',e.message,true)}};$('logoutBtn').onclick=()=>auth.signOut();$('newCustomerBtn').onclick=()=>{pendingCardId=null;$('selectedCard').classList.add('hidden');$('createBtn').disabled=true;$('createBtn').textContent='Card scan करने के बाद ग्राहक बनाएं';showPage('newCustomerCard','नया ग्राहक + Card Activate');};$('openCustomerBtn').onclick=()=>openCustomer($('searchId').value.trim().toUpperCase());
 $('createBtn').onclick=async()=>{const id=$('newId').value.trim().toUpperCase(),name=$('newName').value.trim(),mobile=$('newMobile').value.trim(),type=$('newType').value,litres=Number($('newLitres').value||0);if(!pendingCardId)return msg('createMsg','पहले खाली QR Card scan करके चुनें।',true);if(!id||!name||!mobile)return msg('createMsg','ID, नाम और मोबाइल भरें।',true);if(type==='prepaid'&&litres<=0)return msg('createMsg','Prepaid ग्राहक के लिए litres भरें।',true);try{const customerRef=db.ref('customers/'+id),cardRef=db.ref('cards/'+pendingCardId);const [custSnap,cardSnap]=await Promise.all([customerRef.once('value'),cardRef.once('value')]);if(custSnap.exists())return msg('createMsg','यह Customer ID पहले से मौजूद है।',true);if(cardSnap.exists()&&cardSnap.val().status==='active')return msg('createMsg','यह QR Card पहले से किसी ग्राहक को दिया जा चुका है। दूसरा खाली card scan करें।',true);const data={id,name,mobile,type,cardId:pendingCardId,litres:type==='prepaid'?litres:0,balance:type==='prepaid'?litres*RATE:0,due:0,createdAt:firebase.database.ServerValue.TIMESTAMP,updatedAt:firebase.database.ServerValue.TIMESTAMP};await customerRef.set(data);await cardRef.set({status:'active',cardId:pendingCardId,customerId:id,activatedAt:firebase.database.ServerValue.TIMESTAMP,activatedBy:auth.currentUser.email});await customerRef.child('logs').push({type:'create',litresChange:data.litres,amountChange:data.balance,cardId:pendingCardId,by:auth.currentUser.email,at:firebase.database.ServerValue.TIMESTAMP});msg('createMsg','ग्राहक और QR Card दोनों activate हो गए ✅');$('searchId').value=id;openCustomer(id)}catch(e){msg('createMsg',e.message,true)}};
 async function openByQr(code){const value=String(code||'').trim().toUpperCase();if(!value)return msg('scanMsg','QR खाली है।',true);try{const cardSnap=await db.ref('cards/'+value).once('value');if(cardSnap.exists()){const card=cardSnap.val();if(card.status==='active'&&card.customerId)return openCustomer(card.customerId);return msg('scanMsg','यह QR Card अभी activate नहीं हुआ है।',true)}return openCustomer(value)}catch(e){msg('scanMsg',e.message,true)}}
@@ -509,12 +511,31 @@ async function loadReminders(){
 let activePageId=null;
 let appHistoryBusy=false;
 
+const SRD_APP_PAGES=[
+  'customerSearchCard','customerCard','newCustomerCard','editCustomerCard',
+  'billingCard','scanCard','qrPdfCard','stockCard','financeCard','staffCard',
+  'reportCard','settingsCard','backupCard','reminderCard','rateCard'
+];
+
 function setPageVisible(id,title){
   const target=$(id);
   if(!target) return false;
 
+  // IMPORTANT: these modules are not all direct children of #dashboard.
+  // Hide/show by ID so every module behaves correctly regardless of HTML nesting.
+  SRD_APP_PAGES.forEach(pid=>{
+    const el=$(pid);
+    if(el){
+      el.classList.remove('page-active');
+      el.style.display='none';
+    }
+  });
+
+  const home=$('homeScreen');
+  if(home) home.style.display='none';
+
   document.body.classList.add('page-mode');
-  document.querySelectorAll('#dashboard > .page-active').forEach(x=>x.classList.remove('page-active'));
+  target.style.display='block';
   target.classList.add('page-active');
 
   let back=target.querySelector(':scope > .page-back');
@@ -584,11 +605,23 @@ function openModuleNewTab(id,title,mode){ showPage(id,title,mode,true); }
 
 function closePage(fromPopState=false){
   document.body.classList.remove('page-mode');
-  document.querySelectorAll('#dashboard > .page-active').forEach(x=>x.classList.remove('page-active'));
+
+  SRD_APP_PAGES.forEach(pid=>{
+    const el=$(pid);
+    if(el){
+      el.classList.remove('page-active');
+      el.style.display='none';
+    }
+  });
+
+  const home=$('homeScreen');
+  if(home) home.style.display='block';
+
   activePageId=null;
   window.scrollTo(0,0);
   document.documentElement.scrollTop=0;
   document.body.scrollTop=0;
+
   if(!fromPopState){
     history.replaceState(null,'',location.pathname+location.search);
   }
@@ -601,6 +634,11 @@ window.addEventListener('popstate',()=>{
 });
 
 // ===== END FINAL SINGLE-TAB APP ROUTER =====
+
+function initAppPages(){
+  SRD_APP_PAGES.forEach(pid=>{const el=$(pid);if(el)el.style.display='none';});
+  const home=$('homeScreen');if(home)home.style.display='';
+}
 
 // ===== LIVE HOME STATS =====
 async function updateHomeStats(){
