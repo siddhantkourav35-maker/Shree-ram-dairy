@@ -82,10 +82,7 @@ body.page-mode .page-active>.page-back{
 body.page-mode .bottom-nav-final{display:none!important}
 
 
-/* ===== FINAL MOBILE TABLE SWIPE FIX ===== */
-body.page-mode .page-active{
-  overflow-x:hidden!important;
-}
+/* ===== ONLY ADDITION: MOBILE LEFT/RIGHT TABLE SWIPE ===== */
 body.page-mode .page-active .table-scroll{
   width:100%!important;
   max-width:100%!important;
@@ -95,18 +92,15 @@ body.page-mode .page-active .table-scroll{
   overscroll-behavior-x:contain!important;
   touch-action:pan-x pan-y!important;
   padding-bottom:8px!important;
-  scrollbar-width:thin!important;
 }
 body.page-mode .page-active .table-scroll table{
   min-width:760px!important;
   width:max-content!important;
   max-width:none!important;
-  border-collapse:collapse!important;
 }
 body.page-mode .page-active .table-scroll th,
 body.page-mode .page-active .table-scroll td{
   white-space:nowrap!important;
-  min-width:90px!important;
 }
 
 </style></head><body data-build="FINAL-LOCKED-HOME-CARD-2026-10-03"><div id="customerPortal" class="hidden"><div class="portal-brand"><div style="font-size:28px;font-weight:900">🥛 SHREE RAM DAIRY</div><div>Customer Self-Service • Gadarwara</div></div><main class="portal-wrap"><div class="card"><div class="muted">Customer ID</div><h2 id="portalName">Loading…</h2><div class="pill" id="portalId">-</div></div><div class="card"><div class="muted">Prepaid Milk Balance</div><div class="portal-balance" id="portalLitres">0 L</div><div class="muted">Balance Value: ₹<span id="portalBalance">0</span></div></div><div class="portal-grid"><div class="portal-stat"><span>Pending Due</span><b id="portalDue">₹0</b></div><div class="portal-stat"><span>Mobile</span><b id="portalMobile">-</b></div></div><div class="card"><h2>📋 Delivery & Payment History</h2><div class="portal-history" id="portalHistory">Loading…</div></div><div class="card"><div class="notice">🔒 यह customer portal read-only है। Recharge/payment के लिए Shree Ram Dairy से संपर्क करें।<br>📞 8871983383</div></div></main></div>
@@ -624,7 +618,6 @@ function showPage(id,title,mode,pushHistory=true){
   if(id==='stockCard' && typeof loadStock==='function') loadStock();
   if(id==='reminderCard' && typeof loadReminders==='function') loadReminders();
   runPageMode(mode||'');
-  setTimeout(()=>makeTablesScrollable(target),120);
 }
 
 function openPage(id,title,mode){ showPage(id,title,mode,true); }
@@ -670,10 +663,10 @@ function initAppPages(){
 }
 
 
-// ===== MOBILE TABLE SWIPE WRAPPER =====
+// ===== ONLY ADDITION: WRAP TABLES FOR MOBILE SWIPE =====
 function makeTablesScrollable(root){
   const scope=root||document;
-  scope.querySelectorAll('.page-active table, .page-active table').forEach(table=>{
+  scope.querySelectorAll('.page-active table').forEach(table=>{
     if(table.parentElement && table.parentElement.classList.contains('table-scroll')) return;
     const wrap=document.createElement('div');
     wrap.className='table-scroll';
@@ -681,14 +674,9 @@ function makeTablesScrollable(root){
     wrap.appendChild(table);
   });
 }
-const srdTableObserver=new MutationObserver(muts=>{
-  for(const m of muts){
-    if(m.addedNodes && m.addedNodes.length){
-      const active=document.querySelector('.page-active');
-      if(active) makeTablesScrollable(active);
-      break;
-    }
-  }
+const srdTableObserver=new MutationObserver(()=>{
+  const active=document.querySelector('.page-active');
+  if(active) makeTablesScrollable(active);
 });
 srdTableObserver.observe(document.body,{childList:true,subtree:true});
 
