@@ -64,7 +64,7 @@
   </div>
 </div>
 <div class="card"><div class="section-title">आज का दूध वितरण</div><div class="dashboard-stat"><div class="stat"><span>👥 ग्राहक</span><b id="dashCustomer">—</b></div><div class="stat"><span>💧 चयनित</span><b id="dashLitres">—</b></div><div class="stat"><span>₹ राशि</span><b id="dashAmount">—</b></div></div><div class="muted" style="margin-top:9px">ग्राहक खोलने पर आज की entry यहाँ दिखाई जाएगी।</div></div>
-<div id="qrPdfCard" class="card pdf-card"><div class="section-title">🖨️ खाली QR Cards</div><div class="muted">जब नए कार्ड चाहिए हों, यहाँ से 50 unique QR cards का PDF बनाकर सीधे print कर सकते हैं।</div><button onclick="generate50Cards()">50 QR Cards PDF बनाएं</button><div id="pdfMsg"></div><div id="qrPdfDownload" style="display:none;margin-top:12px"><a id="qrPdfDownloadLink" class="button" href="#" download="Shree_Ram_Dairy_50_FINAL_LOCKED_ATM_QR_Cards_Front_Back.pdf" style="display:inline-block;text-decoration:none;text-align:center">⬇️ PDF Download / Save करें</a></div></div>
+<div id="qrPdfCard" class="card pdf-card"><div class="section-title">🖨️ खाली QR Cards</div><div class="muted">जब नए कार्ड चाहिए हों, यहाँ से 50 unique QR cards का PDF बनाकर सीधे print कर सकते हैं।</div><button onclick="generate50Cards()">50 QR Cards PDF बनाएं</button><div id="pdfMsg"></div></div>
 </div>
 <div id="billingCard" class="card module-card">
  <div class="section-title">🧾 Billing System</div>
@@ -167,6 +167,17 @@ async function openCustomerPortal(cardId){
     const hs=await db.ref('customers/'+cid+'/logs').orderByChild('at').limitToLast(50).once('value');let rows=[];hs.forEach(x=>{const a=x.val()||{};const d=a.at?new Date(a.at).toLocaleString('en-IN'):'';const typ=a.type==='milk'?'🥛 Milk':a.type==='recharge'?'💰 Recharge':a.type==='payment'?'💵 Payment':a.type==='bill'?'🧾 Bill':a.type==='edit'?'✏️ Edit':'Account';rows.unshift('<div style="padding:9px 0;border-bottom:1px solid #e5ebe8"><b>'+typ+'</b><br><span class="muted">'+d+' • '+(a.litresChange||0)+' L • ₹'+Math.round(Math.abs(Number(a.amountChange||0)))+'</span></div>')});$('portalHistory').innerHTML=rows.join('')||'<span class="muted">अभी कोई history नहीं।</span>';
   }catch(e){$('customerPortal').classList.remove('hidden');$('portalName').textContent='Portal नहीं खुला';$('portalHistory').innerHTML='<div class="msg err">'+e.message+'</div><div class="muted">यदि यह पहली बार है, Firebase Authentication में Anonymous sign-in ON करें।</div>'}
 }
+function normalizeQrCardId(raw){
+  const value=String(raw||'').trim();
+  if(!value)return '';
+  try{
+    const u=new URL(value,location.origin);
+    const q=u.searchParams.get('card');
+    if(q)return decodeURIComponent(q).trim().toUpperCase();
+  }catch(e){}
+  return value.toUpperCase();
+}
+
 const cardQuery=new URLSearchParams(location.search).get('card');
 if(cardQuery){document.addEventListener('DOMContentLoaded',()=>openCustomerPortal(cardQuery.trim().toUpperCase()));}
 
@@ -180,9 +191,9 @@ $('paymentBtn').onclick=async()=>{const amount=Number($('creditPayment').value||
 async function stopScan(){if(scanner){try{await scanner.stop()}catch(e){}try{scanner.clear()}catch(e){}scanner=null}$('reader').classList.add('hidden');$('stopScanBtn').classList.add('hidden');$('scanBtn').classList.remove('hidden')}$('stopScanBtn').onclick=stopScan;$('scanBtn').onclick=async()=>{if(!window.Html5Qrcode)return msg('scanMsg','QR scanner load नहीं हुआ। पेज refresh करें।',true);$('reader').classList.remove('hidden');$('stopScanBtn').classList.remove('hidden');$('scanBtn').classList.add('hidden');scanner=new Html5Qrcode('reader');try{await scanner.start({facingMode:'environment'},{fps:10,qrbox:220},decoded=>{stopScan();openByQr(decoded)},()=>{})}catch(e){msg('scanMsg','Camera permission दें और फिर कोशिश करें।',true)}};
 async function stopNewCustomerScan(){if(newCustomerScanner){try{await newCustomerScanner.stop()}catch(e){}try{newCustomerScanner.clear()}catch(e){}newCustomerScanner=null}$('newCardReader').classList.add('hidden');$('newCardStopBtn').classList.add('hidden');$('newCardScanBtn').classList.remove('hidden')}
 $('newCardStopBtn').onclick=stopNewCustomerScan;
-$('newCardScanBtn').onclick=async()=>{if(!window.Html5Qrcode)return msg('newCardMsg','QR scanner load नहीं हुआ। पेज refresh करें।',true);$('newCardReader').classList.remove('hidden');$('newCardStopBtn').classList.remove('hidden');$('newCardScanBtn').classList.add('hidden');newCustomerScanner=new Html5Qrcode('newCardReader');try{await newCustomerScanner.start({facingMode:'environment'},{fps:10,qrbox:220},async decoded=>{const cardId=decoded.trim().toUpperCase();await stopNewCustomerScan();try{const snap=await db.ref('cards/'+cardId).once('value');if(snap.exists()&&snap.val().status==='active')return msg('newCardMsg','यह Card पहले से active है। दूसरा खाली Card scan करें।',true);pendingCardId=cardId;$('selectedCardId').textContent=cardId;$('selectedCard').classList.remove('hidden');$('createBtn').disabled=false;$('createBtn').textContent='ग्राहक बनाएं और Card Activate करें';msg('newCardMsg','Card उपलब्ध है ✅ अब ग्राहक की जानकारी भरें।')}catch(e){msg('newCardMsg',e.message,true)}},()=>{})}catch(e){msg('newCardMsg','Camera permission दें और फिर कोशिश करें।',true)}};
+$('newCardScanBtn').onclick=async()=>{if(!window.Html5Qrcode)return msg('newCardMsg','QR scanner load नहीं हुआ। पेज refresh करें।',true);$('newCardReader').classList.remove('hidden');$('newCardStopBtn').classList.remove('hidden');$('newCardScanBtn').classList.add('hidden');newCustomerScanner=new Html5Qrcode('newCardReader');try{await newCustomerScanner.start({facingMode:'environment'},{fps:10,qrbox:220},async decoded=>{const cardId=normalizeQrCardId(decoded);await stopNewCustomerScan();try{const snap=await db.ref('cards/'+cardId).once('value');if(snap.exists()&&snap.val().status==='active')return msg('newCardMsg','यह Card पहले से active है। दूसरा खाली Card scan करें।',true);pendingCardId=cardId;$('selectedCardId').textContent=cardId;$('selectedCard').classList.remove('hidden');$('createBtn').disabled=false;$('createBtn').textContent='ग्राहक बनाएं और Card Activate करें';msg('newCardMsg','Card उपलब्ध है ✅ अब ग्राहक की जानकारी भरें।')}catch(e){msg('newCardMsg',e.message,true)}},()=>{})}catch(e){msg('newCardMsg','Camera permission दें और फिर कोशिश करें।',true)}};
 
-$('activateCardBtn').onclick=async()=>{if(!currentCustomerId)return msg('cardMsg','पहले customer account खोलें।',true);msg('cardMsg','अब खाली card का QR scan करें…');$('reader').classList.remove('hidden');$('stopScanBtn').classList.remove('hidden');$('scanBtn').classList.add('hidden');scanner=new Html5Qrcode('reader');try{await scanner.start({facingMode:'environment'},{fps:10,qrbox:220},async decoded=>{const cardId=decoded.trim();await stopScan();try{const ref=db.ref('cards/'+cardId),snap=await ref.once('value');if(snap.exists()&&snap.val().status==='active')return msg('cardMsg','यह card पहले से active है।',true);await ref.set({status:'active',cardId,customerId:currentCustomerId,activatedAt:firebase.database.ServerValue.TIMESTAMP,activatedBy:auth.currentUser.email});await db.ref('customers/'+currentCustomerId+'/cardId').set(cardId);msg('cardMsg','Card '+cardId+' अब '+currentCustomerId+' के account से activate हो गया ✅')}catch(e){msg('cardMsg',e.message,true)}},()=>{})}catch(e){msg('cardMsg','Card QR scan नहीं हो पाया। Camera permission check करें।',true)}};
+$('activateCardBtn').onclick=async()=>{if(!currentCustomerId)return msg('cardMsg','पहले customer account खोलें।',true);msg('cardMsg','अब खाली card का QR scan करें…');$('reader').classList.remove('hidden');$('stopScanBtn').classList.remove('hidden');$('scanBtn').classList.add('hidden');scanner=new Html5Qrcode('reader');try{await scanner.start({facingMode:'environment'},{fps:10,qrbox:220},async decoded=>{const cardId=normalizeQrCardId(decoded);await stopScan();try{const ref=db.ref('cards/'+cardId),snap=await ref.once('value');if(snap.exists()&&snap.val().status==='active')return msg('cardMsg','यह card पहले से active है।',true);await ref.set({status:'active',cardId,customerId:currentCustomerId,activatedAt:firebase.database.ServerValue.TIMESTAMP,activatedBy:auth.currentUser.email});await db.ref('customers/'+currentCustomerId+'/cardId').set(cardId);msg('cardMsg','Card '+cardId+' अब '+currentCustomerId+' के account से activate हो गया ✅')}catch(e){msg('cardMsg',e.message,true)}},()=>{})}catch(e){msg('cardMsg','Card QR scan नहीं हो पाया। Camera permission check करें।',true)}};
 
 function scrollToId(id){const el=$(id);if(el){el.scrollIntoView({behavior:'smooth',block:'start'})}}
 function showNewCustomer(){ $('customerCard').classList.add('hidden'); $('newCustomerCard').classList.remove('hidden'); openPage('newCustomerCard','New Customer'); }
@@ -338,15 +349,8 @@ async function generate50Cards(){
         drawBack(MX+col*(W+GX),MY+row*(H+GY));
       }
     }
-    const qrPdfBlob=pdf.output('blob');
-    if(window._srdQrPdfUrl){try{URL.revokeObjectURL(window._srdQrPdfUrl)}catch(e){}}
-    window._srdQrPdfUrl=URL.createObjectURL(qrPdfBlob);
-    const dl=$('qrPdfDownloadLink');
-    if(dl){dl.href=window._srdQrPdfUrl;dl.download='Shree_Ram_Dairy_50_FINAL_LOCKED_ATM_QR_Cards_Front_Back.pdf';}
-    const box=$('qrPdfDownload');
-    if(box)box.style.display='block';
     pdf.save('Shree_Ram_Dairy_50_FINAL_LOCKED_ATM_QR_Cards_Front_Back.pdf');
-    msg('pdfMsg','50 final locked ATM-size Front + Back QR Cards PDF तैयार है ✅ अब नीचे से PDF Download / Save कर सकते हैं।');
+    msg('pdfMsg','50 final locked ATM-size Front + Back QR Cards PDF तैयार है ✅');
   }catch(e){msg('pdfMsg',e.message,true)}
 }
 
@@ -432,42 +436,13 @@ function whatsappLastBill(){
 function clearBillFormForNext(){billItems=[];lastBill=getLastSavedBill();renderBillItems();renderBillPreview();}
 
 try{if(getLastSavedBill())showLastBillActions();}catch(e){}
-async function loadBillHistory(){
-  try{
-    const snap=await db.ref('bills').limitToLast(200).once('value');
-    let rows=[];
-    snap.forEach(ch=>{const b=ch.val()||{};if(b.status!=='deleted')rows.push(b)});
-    rows.sort((a,b)=>Number(b.at||0)-Number(a.at||0));
-    if(!rows.length){$('billHistoryList').innerHTML='<span class="muted">अभी कोई active bill नहीं है।</span>';return;}
-    const body=rows.map(b=>`<tr><td>${esc(b.billNo||'')}</td><td>${b.at?new Date(b.at).toLocaleString('en-IN'):''}</td><td>${esc(b.customerName||'')}</td><td>₹${Math.round(b.total||0)}</td><td>₹${Math.round(b.received||0)}</td><td>₹${Math.round(b.pending||0)}</td><td><button class="secondary" onclick="openSavedBill('${esc(b.billNo||'')}')">Open / Print / Send</button> <button class="secondary" style="color:#b42318;border-color:#f3b6b2" onclick="deleteSavedBill('${esc(b.billNo||'')}')">🗑️ Delete</button></td></tr>`).join('');
-    $('billHistoryList').innerHTML=`<div class="notice" style="margin-bottom:10px">🔒 Delete करने पर bill Firebase से permanently delete नहीं होगा; वह audit/history में सुरक्षित रहेगा।</div><table><tr><th>Bill</th><th>Date</th><th>Customer</th><th>Total</th><th>Received</th><th>Pending</th><th>Action</th></tr>${body}</table>`;
-  }catch(e){msg('billMsg',e.message,true)}
-}
-async function deleteSavedBill(no){
-  try{
-    if(!auth.currentUser)return msg('billMsg','पहले Staff Login करें।',true);
-    if(!confirm('Bill '+no+' को delete करना है? यह history से हट जाएगा, लेकिन permanent record के रूप में सुरक्षित रहेगा।'))return;
-    const ref=db.ref('bills/'+no),snap=await ref.once('value');
-    if(!snap.exists())return msg('billMsg','Bill नहीं मिला।',true);
-    const b=snap.val()||{};
-    if(b.status==='deleted')return msg('billMsg','यह bill पहले ही delete किया जा चुका है।',true);
-    await ref.update({status:'deleted',deletedAt:firebase.database.ServerValue.TIMESTAMP,deletedBy:auth.currentUser.email,deleteAction:'soft-delete'});
-    if(lastBill&&String(lastBill.billNo)===String(no)){
-      lastBill=null;
-      try{localStorage.removeItem('srd_last_bill')}catch(e){}
-      const a=$('lastBillActions'),m=$('lastBillSavedMsg');
-      if(a)a.style.display='none';if(m)m.style.display='none';$('billHistory').innerHTML='';
-    }
-    await loadBillHistory();
-    msg('billMsg','Bill '+esc(no)+' delete कर दिया गया। पुराना record सुरक्षित है।');
-  }catch(e){msg('billMsg',e.message,true)}
-}
-async function openSavedBill(no){try{const s=await db.ref('bills/'+no).once('value');if(!s.exists())return msg('billMsg','Bill नहीं मिला।',true);if((s.val()||{}).status==='deleted')return msg('billMsg','यह bill delete किया जा चुका है।',true);lastBill=s.val();if(!lastBill.at)lastBill.at=Date.now();try{localStorage.setItem('srd_last_bill',JSON.stringify(lastBill))}catch(e){}showLastBillActions();renderBillPreview();msg('billMsg','Bill '+esc(no)+' खुल गया ✅ अब Print / PDF / WhatsApp कर सकते हैं।');openPage('billingCard','Billing / Sales')}catch(e){msg('billMsg',e.message,true)}}
-async function getSavedBill(no){const s=await db.ref('bills/'+no).once('value');if(!s.exists())throw new Error('Bill नहीं मिला।');const b=s.val()||{};if(b.status==='deleted')throw new Error('यह bill delete किया जा चुका है।');return b;}
+async function loadBillHistory(){try{const snap=await db.ref('bills').limitToLast(100).once('value');let rows=[];snap.forEach(ch=>{const b=ch.val()||{};rows.push(b)});rows.sort((a,b)=>Number(b.at||0)-Number(a.at||0));$('billHistoryList').innerHTML=rows.length?'<table><tr><th>Bill</th><th>Date</th><th>Customer</th><th>Total</th><th>Received</th><th>Pending</th><th>Action</th></tr>'+rows.map(b=>'<tr><td>'+esc(b.billNo||'')+'</td><td>'+(b.at?new Date(b.at).toLocaleString('en-IN'):'')+'</td><td>'+esc(b.customerName||'')+'</td><td>₹'+Math.round(b.total||0)+'</td><td>₹'+Math.round(b.received||0)+'</td><td>₹'+Math.round(b.pending||0)+'</td><td><button class="secondary" onclick="openSavedBill(\''+esc(b.billNo||'')+'\')">Open / Print / Send</button></td></tr>').join('')+'</table>':'<span class="muted">अभी कोई bill नहीं है।</span>'}catch(e){msg('billMsg',e.message,true)}}
+async function openSavedBill(no){try{const s=await db.ref('bills/'+no).once('value');if(!s.exists())return msg('billMsg','Bill नहीं मिला।',true);lastBill=s.val();if(!lastBill.at)lastBill.at=Date.now();try{localStorage.setItem('srd_last_bill',JSON.stringify(lastBill))}catch(e){}showLastBillActions();renderBillPreview();msg('billMsg','Bill '+esc(no)+' खुल गया ✅ अब Print / PDF / WhatsApp कर सकते हैं।');openPage('billingCard','Billing / Sales')}catch(e){msg('billMsg',e.message,true)}}
+async function getSavedBill(no){const s=await db.ref('bills/'+no).once('value');if(!s.exists())throw new Error('Bill नहीं मिला।');return s.val();}
 async function reprintSavedBill(no){try{lastBill=await getSavedBill(no);if(!lastBill.at)lastBill.at=Date.now();localStorage.setItem('srd_last_bill',JSON.stringify(lastBill));printLastBill();}catch(e){msg('billMsg',e.message,true)}}
 async function pdfSavedBill(no){try{lastBill=await getSavedBill(no);if(!lastBill.at)lastBill.at=Date.now();localStorage.setItem('srd_last_bill',JSON.stringify(lastBill));downloadLastBillPDF();}catch(e){msg('billMsg',e.message,true)}}
 async function whatsappSavedBill(no){try{lastBill=await getSavedBill(no);if(!lastBill.at)lastBill.at=Date.now();localStorage.setItem('srd_last_bill',JSON.stringify(lastBill));whatsappLastBill();}catch(e){msg('billMsg',e.message,true)}}
-function downloadBillHistoryCSV(){db.ref('bills').once('value').then(s=>{let rows=[['Bill No','Date','Customer','Mobile','Subtotal','Discount','Total','Received','Pending','Payment','Status']];s.forEach(c=>{const b=c.val()||{};if(b.status==='deleted')return;rows.push([b.billNo,b.at?new Date(b.at).toLocaleString('en-IN'):'',b.customerName,b.customerMobile||'',b.subtotal,b.discount,b.total,b.received,b.pending,b.paymentMode,b.status||'active'])});const csv='\\ufeff'+rows.map(r=>r.map(csvCell).join(',')).join('\\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='Shree_Ram_Dairy_Billing_History.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}).catch(e=>msg('billMsg',e.message,true))}
+function downloadBillHistoryCSV(){db.ref('bills').once('value').then(s=>{let rows=[['Bill No','Date','Customer','Mobile','Subtotal','Discount','Total','Received','Pending','Payment']];s.forEach(c=>{const b=c.val()||{};rows.push([b.billNo,b.at?new Date(b.at).toLocaleString('en-IN'):'',b.customerName,b.customerMobile||'',b.subtotal,b.discount,b.total,b.received,b.pending,b.paymentMode])});const csv='\\ufeff'+rows.map(r=>r.map(csvCell).join(',')).join('\\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='Shree_Ram_Dairy_Billing_History.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}).catch(e=>msg('billMsg',e.message,true))}
 function downloadStaffPDF(){if(!window.jspdf)return msg('staffMsg','PDF tool load नहीं हुआ।',true);const name=$('staffName')?.value.trim(),month=$('staffMonth')?.value;if(!name||!month)return msg('staffMsg','पहले Staff name और month भरें।',true);const id=(name+'_'+month).toLowerCase().replace(/[^a-z0-9]+/g,'_');db.ref('staff/'+id).once('value').then(s=>{const x=s.val()||{},abs=Object.keys(x.absent||{}).sort(),adv=Object.values(x.advances||{}),salary=Number(x.meta?.salary||0),days=Number(x.meta?.days||30),totalAdv=adv.reduce((a,v)=>a+Number(v.amount||0),0),ded=days?salary/days*abs.length:0,rem=Math.max(0,salary-ded-totalAdv),{jsPDF}=window.jspdf,p=new jsPDF({unit:'mm',format:'a4'});let y=18;p.setFontSize(16);p.text('SHREE RAM DAIRY - STAFF MONTHLY REPORT',105,y,{align:'center'});y+=10;p.setFontSize(10);[['Staff Name',name],['Month',month],['Salary','₹'+Math.round(salary)],['Days in Month',days],['Total Absent',abs.length],['Absent Deduction','₹'+Math.round(ded)],['Total Advance','₹'+Math.round(totalAdv)],['Remaining Salary','₹'+Math.round(rem)]].forEach(a=>{p.text(a[0]+':',15,y);p.text(String(a[1]),65,y);y+=6});y+=4;p.setFontSize(11);p.text('Absent Dates',15,y);y+=6;p.setFontSize(9);p.text(abs.length?abs.join(', '):'None',15,y,{maxWidth:175});y+=12;p.setFontSize(11);p.text('Advance Entries',15,y);y+=6;p.setFontSize(9);adv.forEach(a=>{p.text((a.date||'')+'   ₹'+Math.round(a.amount||0),15,y);y+=5});p.save('Shree_Ram_Dairy_Staff_'+month+'.pdf')}).catch(e=>msg('staffMsg',e.message,true))}
 async function downloadFullBackup(){try{if(!isAdminUser())return msg('backupMsg','सिर्फ Owner/Admin backup ले सकता है।',true);const paths=['customers','cards','bills','expenses','stock','stockLogs','staff','settings','meta'];const out={exportedAt:new Date().toISOString(),app:'Shree Ram Dairy'};for(const path of paths){const s=await db.ref(path).once('value');out[path]=s.val()||null}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(out,null,2)],{type:'application/json'}));a.download='Shree_Ram_Dairy_Backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);localStorage.setItem('srd_last_backup',Date.now());msg('backupMsg','Full backup download हो गया ✅')}catch(e){msg('backupMsg',e.message,true)}}
 function checkBackupReminder(){const last=Number(localStorage.getItem('srd_last_backup')||0),days=last?Math.floor((Date.now()-last)/86400000):999;if(days>=7)return msg('backupMsg','⚠️ Backup को '+(last?'7 दिन से ज्यादा हो गए हैं।':'अभी तक backup नहीं बनाया गया।')+' आज Full Backup करें।',true);msg('backupMsg','Last backup '+days+' दिन पहले था। अभी backup सुरक्षित है।')}
