@@ -906,7 +906,7 @@ async function saveLocalSettings(){
 
 
 // Initialize stable defaults and modules without deleting any stored data.
-setTimeout(()=>{try{updateHomeStats();if($('expenseDate')&&!$('expenseDate').value)$('expenseDate').value=new Date().toISOString().slice(0,10);if($('staffMonth')&&!$('staffMonth').value)$('staffMonth').value=new Date().toISOString().slice(0,7);if($('staffDaysInMonth'))$('staffDaysInMonth').value=staffDaysForMonth($('staffMonth')?.value);loadStaffList();populateStaffProducts();loadStock();loadFinance();}catch(e){}},700);
+setTimeout(()=>{try{updateHomeStats();if($('expenseDate')&&!$('expenseDate').value)$('expenseDate').value=new Date().toISOString().slice(0,10);if($('staffMonth')&&!$('staffMonth').value)$('staffMonth').value=new Date().toISOString().slice(0,7);loadStaffList();loadStock();loadFinance();}catch(e){}},700);
 
 </script>
 </body>
