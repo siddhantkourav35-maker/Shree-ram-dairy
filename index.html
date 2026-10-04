@@ -525,7 +525,7 @@ function downloadLastBillPDF(){
   const {jsPDF}=window.jspdf;const height=Math.max(150,95+(b.items.length*6));const p=new jsPDF({unit:'mm',format:[58,height]});let y=8;
   p.setFontSize(11);p.text('SHREE RAM DAIRY',29,y,{align:'center'});y+=5;p.setFontSize(7);p.text('शुद्धता हमारी पहचान',29,y,{align:'center'});y+=4;p.text('Hospital Road, Gadarwara',29,y,{align:'center'});y+=4;p.text('8871983383',29,y,{align:'center'});y+=6;p.line(3,y,55,y);y+=5;p.setFontSize(7);p.text('Bill No: '+b.billNo,3,y);y+=4;p.text('Customer: '+String(b.customerName).slice(0,28),3,y);if(b.customerMobile){y+=4;p.text('Mobile: '+String(b.customerMobile).slice(0,18),3,y)}y+=5;p.line(3,y,55,y);y+=5;
   b.items.forEach(x=>{p.text(String(x.product).slice(0,12),3,y);p.text(String(x.qty)+x.unit,31,y,{align:'right'});p.text('₹'+Math.round(x.qty*x.rate),55,y,{align:'right'});y+=5});
-  p.line(3,y,55,y);y+=5;[['Subtotal',b.subtotal],['Discount',b.discount],['TOTAL',b.total],['Received',b.received],['Pending',b.pending]].forEach(a=>{p.text(a[0],3,y);p.text('₹'+Math.round(a[1]),55,y,{align:'right'});y+=4});p.text('Payment: '+b.paymentMode,3,y);y+=6;p.text('धन्यवाद! फिर आइए',29,y,{align:'center'});p.save(b.billNo+'.pdf');msg('billMsg','PDF तैयार हो गया ✅');
+  p.line(3,y,55,y);y+=5;[['Subtotal',b.subtotal],['Discount',b.discount],['TOTAL',b.total],['Received',b.received],['Pending',b.pending]].forEach(a=>{p.text(a[0],3,y);p.text('₹'+Math.round(a[1]),55,y,{align:'right'});y+=4});p.text('Payment: '+b.paymentMode,3,y);y+=6;p.text('शुद्धता का स्वाद, हर दिन आपके साथ',29,y,{align:'center'});p.save(b.billNo+'.pdf');msg('billMsg','PDF तैयार हो गया ✅');
 }
 async function whatsappLastBill(){
   const b=getLastSavedBill();if(!b)return msg('billMsg','पहले Bill Save करें।',true);
