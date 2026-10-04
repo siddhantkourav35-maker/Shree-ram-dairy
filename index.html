@@ -151,7 +151,7 @@ body.page-mode .page-active .table-scroll td{
  <div class="muted">एक bill में कई products • Receive + Pending • Discount • WhatsApp • PDF • 58mm Print</div>
  <div class="row"><input id="billCustomer" placeholder="Customer ID / Mobile (optional)"><input id="billName" placeholder="Customer Name"></div>
  <div id="billItems"></div>
- <button class="secondary" onclick="addBillItem()">➕ Product जोड़ें</button>
+ <button class="secondary" onclick="addBillItem()">➕ Product जोड़ें</button><button class="secondary" onclick="const b=$('productRateSettings');b.classList.toggle('hidden');if(!b.classList.contains('hidden'))renderProductRateSettings()">⚙️ Product Rate बदलें</button><div id="productRateSettings" class="hidden" style="margin-top:8px"></div>
  <div class="row"><input id="billDiscount" type="number" min="0" value="0" placeholder="Discount ₹"><select id="billDiscountType"><option value="rs">₹ Discount</option><option value="pct">% Discount</option></select></div>
  <div class="row"><input id="billReceived" type="number" min="0" value="0" placeholder="Received Money"><select id="billPaymentMode"><option>Cash</option><option>UPI</option><option>Other</option></select></div>
  <div class="bill-total-box"><div>Subtotal <b id="billSubtotal">₹0</b></div><div>Discount <b id="billDiscountShow">₹0</b></div><div class="grand">TOTAL <b id="billTotal">₹0</b></div><div>Received <b id="billReceivedShow">₹0</b></div><div>Pending <b id="billPending">₹0</b></div></div>
@@ -435,7 +435,11 @@ async function generate50Cards(){
 }
 
 // ===== FINAL 2026 BUSINESS MODULES =====
-const BILL_PRODUCTS=[['Milk','L',70],['Dahi','Kg',100],['Paneer','Kg',320],['Khoba','Kg',320],['Ghee','Kg',700],['Makhan','Kg',500],['Matar','Kg',100]];
+let BILL_PRODUCTS=[['Milk','L',70],['Dahi','Kg',100],['Paneer','Kg',320],['Khoba','Kg',320],['Ghee','Kg',700],['Makhan','Kg',500],['Matar','Kg',100],['Cream','Kg',230]];
+function loadSavedProductRates(){try{const saved=JSON.parse(localStorage.getItem('srd_product_rates')||'{}');BILL_PRODUCTS.forEach(p=>{if(saved[p[0]]!==undefined&&Number(saved[p[0]])>=0)p[2]=Number(saved[p[0]])})}catch(e){}}
+function saveProductRates(){try{const saved={};BILL_PRODUCTS.forEach((p,i)=>{const el=$('rate_'+i);const rate=Number(el?.value);if(Number.isFinite(rate)&&rate>=0){p[2]=rate;saved[p[0]]=rate}});localStorage.setItem('srd_product_rates',JSON.stringify(saved));renderBillItems();populateStaffProducts();msg('billMsg','Product rates save ho gaye')}catch(e){msg('billMsg',e.message,true)}}
+function renderProductRateSettings(){const box=$('productRateSettings');if(!box)return;box.innerHTML='<div class="muted small">Yahan default rate badlen. Save karne ke baad naye bill me wahi rate aayega.</div>'+BILL_PRODUCTS.map((p,i)=>'<div class="row" style="margin-top:6px"><input value="'+esc(p[0])+'" disabled><input id="rate_'+i+'" type="number" min="0" step="0.01" value="'+Number(p[2])+'" placeholder="Rate"><span class="muted">Rs / '+esc(p[1])+'</span></div>').join('')+'<button class="secondary" onclick="saveProductRates()">Rates Save Karen</button>'}
+loadSavedProductRates();
 let billItems=[],lastBill=null,stockCache={},staffCache=[];
 function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function addBillItem(item){billItems.push(item||{product:'Milk',unit:'L',qty:1,rate:70});renderBillItems()}
