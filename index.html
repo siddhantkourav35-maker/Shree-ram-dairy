@@ -483,43 +483,8 @@ function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&l
 function addBillItem(item){billItems.push(item||{product:'Milk',unit:'L',qty:1,rate:70});renderBillItems()}
 function renderBillItems(){const box=$('billItems');if(!box)return;box.innerHTML=billItems.map((x,i)=>`<div class="bill-item"><select onchange="billItems[${i}].product=this.value;billItems[${i}].unit=this.options[this.selectedIndex].dataset.unit;billItems[${i}].rate=Number(this.options[this.selectedIndex].dataset.rate);renderBillItems()">${BILL_PRODUCTS.map(p=>`<option value="${esc(p[0])}" data-unit="${p[1]}" data-rate="${p[2]}" ${x.product===p[0]?'selected':''}>${p[0]}</option>`).join('')}</select><input type="number" min="0" step="0.01" value="${x.qty}" onchange="billItems[${i}].qty=Number(this.value);calcBill()"><input type="number" min="0" step="0.01" value="${x.rate}" onchange="billItems[${i}].rate=Number(this.value);calcBill()"><button class="gray bill-remove" onclick="billItems.splice(${i},1);renderBillItems()">×</button></div>`).join('');calcBill()}
 function calcBill(){let sub=billItems.reduce((a,x)=>a+Number(x.qty||0)*Number(x.rate||0),0);let d=Number($('billDiscount')?.value||0);if($('billDiscountType')?.value==='pct')d=sub*d/100;d=Math.min(sub,Math.max(0,d));let total=sub-d,received=Math.max(0,Number($('billReceived')?.value||0));received=Math.min(received,total);let pending=total-received;for(const id of ['billSubtotal','billDiscountShow','billTotal','billReceivedShow','billPending'])if($(id))$(id).textContent='₹'+Math.round(id==='billSubtotal'?sub:id==='billDiscountShow'?d:id==='billTotal'?total:id==='billReceivedShow'?received:pending);return {sub,d,total,received,pending}}
-function normalizeMobile(v){
-  let d=String(v??'').replace(/\\D/g,'');
-  if(d.length===12&&d.startsWith('91'))d=d.slice(2);
-  if(d.length===11&&d.startsWith('0'))d=d.slice(1);
-  return d;
-}
-function normalizeCustomerName(v){
-  return String(v??'').trim().replace(/\\s+/g,' ').toLowerCase();
-}
-async function findCustomerMobile(ref,name){
-  const raw=String(ref||'').trim();
-  const nm=normalizeCustomerName(name);
-  const norm=normalizeMobile(raw);
-  if(raw){
-    try{
-      const direct=await db.ref('customers/'+raw.toUpperCase()).once('value');
-      if(direct.exists()){
-        const dm=normalizeMobile(direct.val()?.mobile||'');
-        if(dm.length===10)return dm;
-      }
-    }catch(e){}
-  }
-  const all=await db.ref('customers').once('value');
-  let byId='',byMobile='',byName='';
-  all.forEach(ch=>{
-    if(byName)return;
-    const c=ch.val()||{};
-    const cm=normalizeMobile(c.mobile||c.phone||c.mobileNumber||'');
-    const cid=String(ch.key||c.id||'').trim().toLowerCase();
-    const cn=normalizeCustomerName(c.name||c.customerName||c.fullName||'');
-    if(!byMobile&&norm.length===10&&cm===norm)byMobile=cm;
-    if(!byId&&raw&&cid===raw.toLowerCase()&&cm.length===10)byId=cm;
-    if(nm&&cn===nm&&cm.length===10)byName=cm;
-  });
-  return byId||byMobile||byName||'';
-}
-
+function normalizeMobile(v){let d=String(v??'').replace(/\D/g,'');if(d.length===12&&d.startsWith('91'))d=d.slice(2);if(d.length===11&&d.startsWith('0'))d=d.slice(1);return d}
+async function findCustomerMobile(ref,name){const raw=String(ref||'').trim(),nm=String(name||'').trim().toLowerCase(),norm=normalizeMobile(raw);if(raw){const direct=await db.ref('customers/'+raw.toUpperCase()).once('value');if(direct.exists())return normalizeMobile(direct.val()?.mobile||'')}const all=await db.ref('customers').once('value');let found='';all.forEach(ch=>{if(found)return;const c=ch.val()||{};const cm=normalizeMobile(c.mobile||'');const cid=String(ch.key||'').trim().toLowerCase();const cn=String(c.name||c.customerName||'').trim().toLowerCase();if(norm.length===10&&cm===norm)found=cm;else if(nm&&cn===nm&&cm.length===10)found=cm;else if(raw&&cid===raw.toLowerCase()&&cm.length===10)found=cm});return found}
 ['billDiscount','billDiscountType','billReceived'].forEach(id=>$(id)?.addEventListener('input',calcBill));
 async function billNo(){const ref=db.ref('meta/billCounter');const result=await ref.transaction(v=>Number(v||0)+1);if(!result.committed)throw new Error('Bill number generate नहीं हो पाया।');return 'SRD-'+String(result.snapshot.val()).padStart(6,'0')}
 async function saveBill(){try{if(!auth.currentUser)return msg('billMsg','पहले Staff Login करें।',true);if(!billItems.length)return msg('billMsg','कम से कम एक product जोड़ें।',true);const t=calcBill(),num=await billNo(),customer=$('billCustomer').value.trim(),name=$('billName').value.trim()||'Walk-in Customer',now=new Date();let customerMobile=await findCustomerMobile(customer,name);const bill={billNo:num,customerRef:customer,customerMobile,customerName:name,items:billItems.map(x=>({...x})),subtotal:t.sub,discount:t.d,total:t.total,received:t.received,pending:t.pending,paymentMode:$('billPaymentMode').value,at:firebase.database.ServerValue.TIMESTAMP,staff:auth.currentUser.email};await db.ref('bills/'+num).set(bill);if(customer){let q=customer.toUpperCase();let snap=await db.ref('customers/'+q).once('value');if(!snap.exists()){const all=await db.ref('customers').once('value');all.forEach(ch=>{if(String(ch.val()?.mobile||'')===customer)snap=ch});}if(snap.exists()){const cid=snap.key;await db.ref('customers/'+cid+'/logs').push({type:'bill',billNo:num,amountChange:t.received,by:auth.currentUser.email,at:firebase.database.ServerValue.TIMESTAMP})}}lastBill={...bill,at:now};try{localStorage.setItem('srd_last_bill',JSON.stringify(lastBill));}catch(e){}showLastBillActions();msg('billMsg','Bill '+num+' save हो गया ✅');renderBillPreview();updateHomeStats();}catch(e){msg('billMsg',e.message,true)}}
@@ -563,41 +528,19 @@ function downloadLastBillPDF(){
   p.line(3,y,55,y);y+=5;[['Subtotal',b.subtotal],['Discount',b.discount],['TOTAL',b.total],['Received',b.received],['Pending',b.pending]].forEach(a=>{p.text(a[0],3,y);p.text('₹'+Math.round(a[1]),55,y,{align:'right'});y+=4});p.text('Payment: '+b.paymentMode,3,y);y+=6;p.text('धन्यवाद! फिर आइए',29,y,{align:'center'});p.save(b.billNo+'.pdf');msg('billMsg','PDF तैयार हो गया ✅');
 }
 async function whatsappLastBill(){
-  let b=getLastSavedBill();
-  if(!b)return msg('billMsg','पहले Bill Save करें।',true);
-
-  // Always refresh mobile from Firebase when the saved bill does not already have a valid number.
+  const b=getLastSavedBill();if(!b)return msg('billMsg','पहले Bill Save करें।',true);
   let mobile=normalizeMobile(b.customerMobile||'');
-  try{
-    if(mobile.length!==10&&b.billNo){
-      const live=await db.ref('bills/'+b.billNo).once('value');
-      if(live.exists()){
-        b=live.val()||b;
-        lastBill=b;
-        mobile=normalizeMobile(b.customerMobile||'');
-      }
-    }
-    if(mobile.length!==10){
-      mobile=await findCustomerMobile(b.customerRef||'',b.customerName||'');
-      if(mobile){
-        b.customerMobile=mobile;
-        lastBill=b;
-        try{localStorage.setItem('srd_last_bill',JSON.stringify(b))}catch(e){}
-        if(b.billNo)await db.ref('bills/'+b.billNo+'/customerMobile').set(mobile);
-      }
-    }
-  }catch(e){
-    console.error('WhatsApp mobile lookup failed:',e);
-  }
-
+  if(mobile.length!==10&&b.customerRef){try{mobile=await findCustomerMobile(b.customerRef,b.customerName);if(mobile)b.customerMobile=mobile}catch(e){}}
   if(mobile.length!==10){
-    return msg('billMsg','Bill में customer mobile number उपलब्ध नहीं है। Customer ID/Mobile या सही Customer Name के साथ Bill Save करें।',true);
+    const entered=prompt('WhatsApp पर Bill भेजने के लिए customer mobile number डालें (10 digit):', '');
+    mobile=normalizeMobile(entered||'');
+    if(mobile.length!==10)return msg('billMsg','सही 10 digit mobile number डालें।',true);
+    b.customerMobile=mobile;lastBill=b;
+    try{localStorage.setItem('srd_last_bill',JSON.stringify(b));}catch(e){}
+    try{if(b.billNo)await db.ref('bills/'+b.billNo+'/customerMobile').set(mobile);}catch(e){}
+    renderBillPreview();
   }
-
-  const text=`*SHREE RAM DAIRY*%0Aबिल नं: ${b.billNo}%0Aग्राहक: ${encodeURIComponent(b.customerName||'') }%0Aमोबाइल: ${mobile}%0A%0A`+
-    b.items.map(x=>`${encodeURIComponent(x.product)} ${x.qty}${x.unit} = ₹${Math.round(x.qty*x.rate)}`).join('%0A')+
-    `%0A%0ATotal: ₹${Math.round(b.total)}%0AReceived: ₹${Math.round(b.received)}%0APending: ₹${Math.round(b.pending)}%0APayment: ${encodeURIComponent(b.paymentMode||'')}%0Aधन्यवाद!`;
-
+  const text=`*SHREE RAM DAIRY*%0Aबिल नं: ${b.billNo}%0Aग्राहक: ${encodeURIComponent(b.customerName)}%0Aमोबाइल: ${mobile}%0A%0A`+b.items.map(x=>`${encodeURIComponent(x.product)} ${x.qty}${x.unit} = ₹${Math.round(x.qty*x.rate)}`).join('%0A')+`%0A%0ATotal: ₹${Math.round(b.total)}%0AReceived: ₹${Math.round(b.received)}%0APending: ₹${Math.round(b.pending)}%0APayment: ${encodeURIComponent(b.paymentMode)}%0Aधन्यवाद!`;
   window.open('https://wa.me/91'+mobile+'?text='+text,'_blank');
 }
 function clearBillFormForNext(){billItems=[];lastBill=getLastSavedBill();renderBillItems();renderBillPreview();}
