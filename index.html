@@ -511,7 +511,8 @@ async function saveBill(){try{
  let customerMobile=await findCustomerMobile(customer,name);
  const isEdit=!!editingBillNo, num=isEdit?editingBillNo:await billNo();
  let old=null;if(isEdit){const snap=await db.ref('bills/'+num).once('value');if(!snap.exists())throw new Error('Edit करने के लिए Bill नहीं मिला।');old=snap.val()||{}}
- const bill={billNo:num,customerRef:customer,customerMobile,customerName:name,items:billItems.map(x=>({...x})),subtotal:t.sub,discount:t.d,total:t.total,received:t.received,pending:t.pending,paymentMode:$('billPaymentMode').value,at:old?.at||firebase.database.ServerValue.TIMESTAMP,staff:auth.currentUser.email,updatedAt:isEdit?firebase.database.ServerValue.TIMESTAMP:undefined};
+ const bill={billNo:num,customerRef:customer,customerMobile,customerName:name,items:billItems.map(x=>({...x})),subtotal:t.sub,discount:t.d,total:t.total,received:t.received,pending:t.pending,paymentMode:$('billPaymentMode').value,at:old?.at||firebase.database.ServerValue.TIMESTAMP,staff:auth.currentUser.email};
+ if(isEdit){bill.updatedAt=firebase.database.ServerValue.TIMESTAMP;}
  await db.ref('bills/'+num).set(bill);
  if(customer && !isEdit){let q=customer.toUpperCase();let snap=await db.ref('customers/'+q).once('value');if(!snap.exists()){const all=await db.ref('customers').once('value');all.forEach(ch=>{if(String(ch.val()?.mobile||'')===customer)snap=ch});}if(snap.exists()){const cid=snap.key;await db.ref('customers/'+cid+'/logs').push({type:'bill',billNo:num,amountChange:t.received,by:auth.currentUser.email,at:firebase.database.ServerValue.TIMESTAMP})}}
  lastBill={...bill,at:old?.at||Date.now()};delete lastBill.updatedAt;try{localStorage.setItem('srd_last_bill',JSON.stringify(lastBill));}catch(e){}
