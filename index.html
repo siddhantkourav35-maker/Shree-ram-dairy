@@ -543,23 +543,10 @@ async function downloadLastBillPDF(){try{const canvas=await billToCanvas();const
 async function shareBillToWhatsApp(b){
   try{
     if(!b)return msg('billMsg','पहले Bill Save करें।',true);
-
     let mobile=normalizeMobile(b.customerMobile||'');
     if(mobile.length!==10)mobile=normalizeMobile(b.customerRef||'');
-    if(mobile.length!==10){
-      try{mobile=normalizeMobile(await findCustomerMobile(b.customerRef,b.customerName)||'')}catch(e){}
-    }
-    if(mobile.length!==10&&b.billNo){
-      try{
-        const snap=await db.ref('bills/'+b.billNo).once('value');
-        const saved=snap.val()||{};
-        mobile=normalizeMobile(saved.customerMobile||'');
-        if(mobile.length!==10)mobile=normalizeMobile(saved.customerRef||'');
-        if(mobile.length===10)b={...b,...saved,customerMobile:mobile};
-      }catch(e){}
-    }
-    if(mobile.length!==10)return msg('billMsg','इस saved bill में valid 10-digit mobile number नहीं मिला। Customer का mobile number save करें।',true);
-
+    if(mobile.length!==10){try{mobile=normalizeMobile(await findCustomerMobile(b.customerRef,b.customerName)||'')}catch(e){}}
+    if(mobile.length!==10)return msg('billMsg','इस saved bill में valid 10-digit mobile number नहीं मिला।',true);
     b.customerMobile=mobile;
     lastBill=b;
     try{localStorage.setItem('srd_last_bill',JSON.stringify(b))}catch(e){}
@@ -568,33 +555,33 @@ async function shareBillToWhatsApp(b){
     const canvas=await billToCanvas();
     const blob=await new Promise((resolve,reject)=>canvas.toBlob(x=>x?resolve(x):reject(new Error('Bill image generate नहीं हुई।')),'image/png',1));
     const fileName=(b.billNo||'Bill')+'.png';
-    const file=new File([blob],fileName,{type:'image/png'});
     const message='नमस्ते '+(b.customerName||'Customer')+' जी,\nShree Ram Dairy का Bill '+(b.billNo||'')+'\nGrand Total: ₹'+Number(b.total||0).toFixed(2)+'\nPending Amount: ₹'+Number(b.pending||0).toFixed(2)+'\nधन्यवाद!';
 
-    // Preferred mobile flow: the bill image is already attached to the native
-    // share sheet. User only chooses WhatsApp and the customer chat.
-    if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){
-      await navigator.share({files:[file],text:message,title:'Shree Ram Dairy Bill'});
-      msg('billMsg','Bill image WhatsApp में पहले से attached है ✅ अब customer chat चुनकर सिर्फ Send करें।');
-      return true;
+    // PRIMARY: Share the final bill PNG through the phone's native Share Sheet.
+    // On iPhone this keeps the PNG attached when WhatsApp is selected.
+    // The saved customer number remains 10 digits; the number is only used for lookup.
+    if(navigator.share && typeof File!=='undefined'){
+      const file=new File([blob],fileName,{type:'image/png'});
+      const shareFiles={files:[file]};
+      if(!navigator.canShare || navigator.canShare(shareFiles)){
+        await navigator.share({files:[file],text:message,title:'Shree Ram Dairy Bill'});
+        msg('billMsg','Bill '+esc(b.billNo||'')+' की PNG image WhatsApp Share में attached है ✅ Customer Mobile: '+esc(mobile));
+        return true;
+      }
     }
 
-    // Browser fallback: exact customer chat + pre-filled text.
-    // Web WhatsApp links cannot attach a local image automatically.
+    // Fallback: open the exact saved customer's WhatsApp chat with a pre-filled message.
     const waUrl='https://wa.me/91'+mobile+'?text='+encodeURIComponent(message);
     const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');a.href=url;a.download=fileName;document.body.appendChild(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),10000);
+    const a=document.createElement('a');a.href=url;a.download=fileName;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
     window.location.href=waUrl;
-    msg('billMsg','Customer '+mobile+' का WhatsApp chat खुल गया। Bill image download हुई है; इस browser में automatic attachment उपलब्ध नहीं है।',true);
+    msg('billMsg','Customer '+mobile+' का WhatsApp chat खुल गया और bill image तैयार है। Image attach करके Send करें।');
     return true;
   }catch(e){
-    if(e&&e.name==='AbortError')return false;
-    msg('billMsg','WhatsApp bill तैयार नहीं हो पाया: '+e.message,true);
-    return false;
+    if(e && e.name==='AbortError')return false;
+    msg('billMsg','WhatsApp bill तैयार नहीं हो पाया: '+e.message,true);return false;
   }
 }
-
 async function whatsappLastBill(){return shareBillToWhatsApp(getLastSavedBill())}
 async function saveBillAndWhatsApp(){
   try{
