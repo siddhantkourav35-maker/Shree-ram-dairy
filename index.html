@@ -168,7 +168,7 @@ body.page-mode .page-active .table-scroll td{
  <div class="row"><input id="billDiscount" type="number" min="0" value="0" placeholder="Discount ₹"><select id="billDiscountType"><option value="rs">₹ Discount</option><option value="pct">% Discount</option></select></div>
  <div class="row"><input id="billReceived" type="number" min="0" value="0" placeholder="Received Money"><select id="billPaymentMode"><option>Cash</option><option>UPI</option><option>Other</option></select></div>
  <div class="bill-total-box"><div>Subtotal <b id="billSubtotal">₹0</b></div><div>Discount <b id="billDiscountShow">₹0</b></div><div class="grand">TOTAL <b id="billTotal">₹0</b></div><div>Received <b id="billReceivedShow">₹0</b></div><div>Pending <b id="billPending">₹0</b></div></div>
- <button onclick="saveBill()" id="billSaveBtn">💾 Bill Save करें</button><button class="secondary" onclick="saveBillAndWhatsApp()" id="billSaveWhatsAppBtn">💾 Save + WhatsApp</button><button class="secondary hidden" onclick="cancelBillEdit()" id="billEditCancelBtn">✖️ Edit Cancel</button><div class="muted small">📲 Save + WhatsApp से saved customer number पर bill share होगा। iPhone/Android में WhatsApp चुनकर Send करना होगा।</div><div class="muted small">🖨️ 58mm Bluetooth printer: phone/browser के अनुसार compatible printer app या Print dialog की जरूरत हो सकती है।</div><div id="lastBillActions" class="row" style="display:none;margin-top:10px"><button class="secondary" onclick="printLastBill()">🖨️ 58mm Print</button><button class="secondary" onclick="print80mmBill()">🖨️ 80mm Print</button><button class="secondary" onclick="bluetoothPrintLastBill()">🔵 Bluetooth Connect & Print</button><button class="secondary" onclick="downloadLastBillPDF()">📄 PDF</button><button class="secondary" onclick="whatsappLastBill()">📲 WhatsApp</button></div><div id="lastBillSavedMsg" class="notice" style="display:none;margin-top:8px"></div>
+ <button onclick="saveBill()" id="billSaveBtn">💾 Bill Save करें</button><button class="secondary" onclick="saveBillAndWhatsApp()" id="billSaveWhatsAppBtn">💾 Save + WhatsApp</button><button class="secondary hidden" onclick="cancelBillEdit()" id="billEditCancelBtn">✖️ Edit Cancel</button><div class="muted small">📲 Save + WhatsApp से saved customer number पर bill share होगा। iPhone/Android में WhatsApp चुनकर Send करना होगा।</div><div class="muted small">🖨️ 58mm Bluetooth printer: phone/browser के अनुसार compatible printer app या Print dialog की जरूरत हो सकती है।</div><div id="lastBillActions" class="row" style="display:none;margin-top:10px"><button class="secondary" onclick="printLastBill()">🖨️ 58mm Print</button><button class="secondary" onclick="print80mmBill()">🖨️ 80mm Print</button><button class="secondary" onclick="bluetoothPrintLastBill()">🔵 Bluetooth Connect & Print</button><button class="secondary" onclick="downloadLastBillPDF()">📄 PDF</button><button class="secondary" onclick="shareBillToWhatsApp(getLastSavedBill())">📲 WhatsApp</button><button class="secondary" onclick="shareBillPNG()">🖼️ Bill PNG</button></div><div id="lastBillSavedMsg" class="notice" style="display:none;margin-top:8px"></div>
  <div id="billMsg"></div><div class="row"><button class="secondary" onclick="loadBillHistory()">📚 Billing History</button><button class="secondary" onclick="downloadBillHistoryCSV()">⬇️ Bills CSV</button></div><div id="billHistory" class="small"></div><div id="billHistoryList" class="small"></div>
 </div>
 <div id="stockCard" class="card module-card">
@@ -547,40 +547,33 @@ async function shareBillToWhatsApp(b){
     if(mobile.length!==10)mobile=normalizeMobile(b.customerRef||'');
     if(mobile.length!==10){try{mobile=normalizeMobile(await findCustomerMobile(b.customerRef,b.customerName)||'')}catch(e){}}
     if(mobile.length!==10)return msg('billMsg','इस saved bill में valid 10-digit mobile number नहीं मिला।',true);
-    b.customerMobile=mobile;
-    lastBill=b;
+    b.customerMobile=mobile; lastBill=b;
     try{localStorage.setItem('srd_last_bill',JSON.stringify(b))}catch(e){}
     if(b.billNo)try{await db.ref('bills/'+b.billNo+'/customerMobile').set(mobile)}catch(e){}
-
-    const canvas=await billToCanvas();
-    const blob=await new Promise((resolve,reject)=>canvas.toBlob(x=>x?resolve(x):reject(new Error('Bill image generate नहीं हुई।')),'image/png',1));
-    const fileName=(b.billNo||'Bill')+'.png';
     const message='नमस्ते '+(b.customerName||'Customer')+' जी,\nShree Ram Dairy का Bill '+(b.billNo||'')+'\nGrand Total: ₹'+Number(b.total||0).toFixed(2)+'\nPending Amount: ₹'+Number(b.pending||0).toFixed(2)+'\nधन्यवाद!';
-
-    // PRIMARY: Share the final bill PNG through the phone's native Share Sheet.
-    // On iPhone this keeps the PNG attached when WhatsApp is selected.
-    // The saved customer number remains 10 digits; the number is only used for lookup.
-    if(navigator.share && typeof File!=='undefined'){
-      const file=new File([blob],fileName,{type:'image/png'});
-      const shareFiles={files:[file]};
-      if(!navigator.canShare || navigator.canShare(shareFiles)){
-        await navigator.share({files:[file],text:message,title:'Shree Ram Dairy Bill'});
-        msg('billMsg','Bill '+esc(b.billNo||'')+' की PNG image WhatsApp Share में attached है ✅ Customer Mobile: '+esc(mobile));
-        return true;
-      }
-    }
-
-    // Fallback: open the exact saved customer's WhatsApp chat with a pre-filled message.
     const waUrl='https://wa.me/91'+mobile+'?text='+encodeURIComponent(message);
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');a.href=url;a.download=fileName;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
     window.location.href=waUrl;
-    msg('billMsg','Customer '+mobile+' का WhatsApp chat खुल गया और bill image तैयार है। Image attach करके Send करें।');
+    msg('billMsg','Customer '+mobile+' की WhatsApp chat खोली जा रही है। Bill message तैयार है — सिर्फ Send करें।');
     return true;
   }catch(e){
-    if(e && e.name==='AbortError')return false;
-    msg('billMsg','WhatsApp bill तैयार नहीं हो पाया: '+e.message,true);return false;
+    msg('billMsg','WhatsApp chat नहीं खुल पाई: '+e.message,true); return false;
   }
+}
+
+async function shareBillPNG(){
+  try{
+    const b=getLastSavedBill();
+    if(!b)return msg('billMsg','पहले Bill Save करें।',true);
+    const canvas=await billToCanvas();
+    const blob=await new Promise((resolve,reject)=>canvas.toBlob(x=>x?resolve(x):reject(new Error('Bill image generate नहीं हुई।')),'image/png',1));
+    const file=new File([blob],(b.billNo||'Bill')+'.png',{type:'image/png'});
+    if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){
+      await navigator.share({files:[file],text:'Shree Ram Dairy Bill '+(b.billNo||''),title:'Shree Ram Dairy Bill'});
+      return true;
+    }
+    const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=(b.billNo||'Bill')+'.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000);
+    msg('billMsg','Bill PNG download हो गई।',false); return true;
+  }catch(e){if(e?.name==='AbortError')return false; msg('billMsg','PNG share नहीं हो पाई: '+e.message,true);return false}
 }
 async function whatsappLastBill(){return shareBillToWhatsApp(getLastSavedBill())}
 async function saveBillAndWhatsApp(){
