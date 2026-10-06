@@ -107,21 +107,7 @@ body.page-mode .page-active .table-scroll td{
   white-space:nowrap!important;
 }
 
-
-/* ===== ADVANCE BOOKING ===== */
-.advance-booking-box{margin-top:14px;border:1px solid #dbe9e3;border-radius:20px;background:#f8fcfa;padding:14px;box-shadow:0 4px 16px rgba(7,75,52,.06)}
-.advance-booking-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.advance-booking-head h3{margin:0;color:#075c45;font-size:20px}.advance-booking-head small{display:block;color:#65716d;font-size:11px;font-weight:500;margin-top:2px}
-.advance-booking-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 10px}.advance-booking-grid .full{grid-column:1/-1}.advance-booking-total{background:#e6f5ed;border:1px solid #cbe7d9;border-radius:14px;padding:10px;margin:4px 0 8px}.advance-booking-total div{display:flex;justify-content:space-between;padding:3px 0}.advance-booking-total .grand{font-size:18px;font-weight:900;color:#075c45}.advance-booking-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}.advance-booking-actions button{margin:0}.advance-booking-history{margin-top:14px;overflow:auto}.advance-booking-history table{min-width:860px}.booking-status{display:inline-block;padding:5px 9px;border-radius:999px;font-weight:800;font-size:11px}.booking-pending{background:#fff0cf;color:#a66500}.booking-confirmed{background:#dff0ff;color:#0864a7}.booking-delivered{background:#dff7e6;color:#14733d}.booking-cancelled{background:#ffe3e3;color:#b42318}.booking-actions{display:flex;gap:5px;flex-wrap:wrap}.booking-actions button{padding:7px 9px;margin:0;font-size:12px}.advance-booking-print{display:none}
-@media(max-width:600px){.advance-booking-grid{grid-template-columns:1fr}.advance-booking-grid .full{grid-column:auto}.advance-booking-actions{grid-template-columns:1fr 1fr}.advance-booking-actions button:last-child{grid-column:1/-1}}
-@media print{body>*:not(.advance-booking-print){display:none!important}.advance-booking-print{display:block!important;position:static!important}.advance-booking-print .booking-slip{width:76mm;margin:0 auto;padding:5mm;font-family:Arial,sans-serif;color:#111}.booking-slip h1{text-align:center;font-size:18px;margin:0}.booking-slip .shop{text-align:center;font-size:10px;margin:3px 0 8px}.booking-slip .booking-title{text-align:center;border:1px solid #111;padding:4px;font-weight:900;margin-bottom:7px}.booking-slip table{width:100%;border-collapse:collapse;font-size:10px}.booking-slip td{padding:3px 0;border-bottom:1px dashed #999}.booking-slip .r{text-align:right}.booking-slip .total{font-size:13px;font-weight:900}.booking-slip .footer{text-align:center;margin-top:9px;font-size:10px}}
-
-/* ===== THERMAL PRINTER SELECTOR ===== */
-.printer-modal{position:fixed;inset:0;background:rgba(0,0,0,.48);z-index:99999;display:flex;align-items:flex-end;justify-content:center;padding:12px}.printer-modal.hidden{display:none}.printer-sheet{width:min(560px,100%);background:#fff;border-radius:24px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.25)}.printer-sheet h3{margin:0 0 5px}.printer-list{display:grid;gap:8px;margin:12px 0}.printer-item{border:1px solid #d7e5df;border-radius:15px;padding:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#f7fbf9}.printer-item.selected{border-color:#087f5b;background:#e8f7f1}.printer-item b{display:block}.printer-status{font-size:11px;color:#66716d;margin-top:3px}.printer-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.printer-note{font-size:12px;color:#65716d;background:#f2f7f5;border-radius:12px;padding:10px;margin:8px 0}.printer-current{font-size:12px;margin:8px 0;color:#075c43;font-weight:700}
-
-</style><style>
-.bill-history-actions{align-items:center}.bill-history-actions button{white-space:nowrap}.save-wa-btn{background:#087f5b!important;color:#fff!important}
 </style>
-
 <style>
 .customer-list{display:flex;flex-direction:column;gap:8px;margin-top:8px;max-height:55vh;overflow:auto}.customer-list-item{width:100%;display:flex;justify-content:space-between;align-items:center;text-align:left;background:#fff;border:1px solid #dce9e2;border-radius:14px;padding:12px 14px;cursor:pointer;color:inherit}.customer-list-item:hover{border-color:#0b8b68}.customer-list-item .muted{font-size:12px;margin-top:3px}</style>
 </head><body data-build="FINAL-LOCKED-HOME-CARD-2026-10-03"><div id="customerPortal" class="hidden"><div class="portal-brand"><div style="font-size:28px;font-weight:900">🥛 SHREE RAM DAIRY</div><div>Customer Self-Service • Gadarwara</div></div><main class="portal-wrap"><div class="card"><div class="muted">Customer ID</div><h2 id="portalName">Loading…</h2><div class="pill" id="portalId">-</div></div><div class="card"><div class="muted">Prepaid Milk Balance</div><div class="portal-balance" id="portalLitres">0 L</div><div class="muted">Balance Value: ₹<span id="portalBalance">0</span></div></div><div class="portal-grid"><div class="portal-stat"><span>Pending Due</span><b id="portalDue">₹0</b></div><div class="portal-stat"><span>Mobile</span><b id="portalMobile">-</b></div></div><div class="card"><h2>📋 Delivery & Payment History</h2><div class="portal-history" id="portalHistory">Loading…</div></div><div class="card"><div class="notice">🔒 यह customer portal read-only है। Recharge/payment के लिए Shree Ram Dairy से संपर्क करें।<br>📞 8871983383</div></div></main></div>
@@ -172,41 +158,6 @@ body.page-mode .page-active .table-scroll td{
 </div>
 <div id="billingCard" class="card module-card">
  <div class="section-title">🧾 Billing System</div>
- <div class="advance-booking-box">
-  <div class="advance-booking-head">
-   <div><h3>📦 एडवांस बुकिंग</h3><small>ग्राहक द्वारा पहले से बुक किया गया सामान</small></div>
-   <button class="secondary" type="button" onclick="toggleAdvanceBooking()" id="advanceBookingToggle">➕ नई बुकिंग</button>
-  </div>
-  <div id="advanceBookingForm" class="hidden">
-   <div class="advance-booking-grid">
-    <div><label>ग्राहक का नाम *</label><input id="abName" placeholder="ग्राहक का नाम"></div>
-    <div><label>मोबाइल नंबर *</label><input id="abMobile" inputmode="numeric" maxlength="10" placeholder="10 अंकों का मोबाइल नंबर"></div>
-    <div><label>बुकिंग की तारीख *</label><input id="abBookingDate" type="date"></div>
-    <div><label>सामान लेने की तारीख *</label><input id="abPickupDate" type="date"></div>
-    <div><label>समय *</label><input id="abTime" type="time" value="08:00"></div>
-    <div><label>प्रोडक्ट *</label><select id="abProduct" onchange="advanceBookingProductChanged()"></select></div>
-    <div><label>मात्रा *</label><input id="abQty" type="number" min="0.01" step="0.01" value="1" oninput="calcAdvanceBooking()"></div>
-    <div><label>दर (₹)</label><input id="abRate" type="number" min="0" step="0.01" oninput="this.dataset.manual='1';calcAdvanceBooking()"></div>
-    <div><label>जमा एडवांस (₹)</label><input id="abAdvance" type="number" min="0" step="0.01" value="0" oninput="calcAdvanceBooking()"></div>
-    <div><label>नोट (वैकल्पिक)</label><input id="abNote" placeholder="जैसे सुबह 8 बजे चाहिए"></div>
-   </div>
-   <div class="advance-booking-total">
-    <div class="grand"><span>कुल राशि</span><b id="abTotal">₹0</b></div>
-    <div><span>जमा एडवांस</span><b id="abAdvanceShow">₹0</b></div>
-    <div><span>बाकी राशि</span><b id="abPending">₹0</b></div>
-   </div>
-   <div class="advance-booking-actions">
-    <button type="button" onclick="saveAdvanceBooking()" id="abSaveBtn">✅ बुकिंग सेव करें</button>
-    <button type="button" class="secondary" onclick="enableAdvanceBookingNotifications()" id="abNotifyBtn">🔔 Notification ON करें</button>
-    <button type="button" class="secondary" onclick="printAdvanceBooking()">🖨️ प्रिंट करें</button>
-    <button type="button" class="secondary" onclick="whatsappAdvanceBooking()">📲 WhatsApp पर भेजें</button>
-    <button type="button" class="gray" onclick="resetAdvanceBookingForm()">↩️ नई बुकिंग</button>
-   </div>
-   <div id="advanceBookingMsg"></div>
-  </div>
-  <div id="advanceBookingHistory" class="advance-booking-history"></div>
- </div>
-
  <div class="muted">एक bill में कई products • Receive + Pending • Discount • WhatsApp • PDF • 58mm Print</div>
  <div class="row"><input id="billCustomer" placeholder="Customer ID / Mobile (optional)"><input id="billName" placeholder="Customer Name"></div>
  <div id="billItems"></div>
@@ -214,7 +165,7 @@ body.page-mode .page-active .table-scroll td{
  <div class="row"><input id="billDiscount" type="number" min="0" value="0" placeholder="Discount ₹"><select id="billDiscountType"><option value="rs">₹ Discount</option><option value="pct">% Discount</option></select></div>
  <div class="row"><input id="billReceived" type="number" min="0" value="0" placeholder="Received Money"><select id="billPaymentMode"><option>Cash</option><option>UPI</option><option>Other</option></select></div>
  <div class="bill-total-box"><div>Subtotal <b id="billSubtotal">₹0</b></div><div>Discount <b id="billDiscountShow">₹0</b></div><div class="grand">TOTAL <b id="billTotal">₹0</b></div><div>Received <b id="billReceivedShow">₹0</b></div><div>Pending <b id="billPending">₹0</b></div></div>
- <button onclick="saveBill()" id="billSaveBtn">💾 Bill Save करें</button><button class="secondary" onclick="saveBillAndWhatsApp()" id="billSaveWhatsAppBtn">💾 Save + WhatsApp</button><button class="secondary hidden" onclick="cancelBillEdit()" id="billEditCancelBtn">✖️ Edit Cancel</button><div class="muted small">📲 Save + WhatsApp से saved customer number पर पूरा Bill PNG WhatsApp पर automatic भेजा जाएगा।</div><div class="muted small">🖨️ 58mm Bluetooth printer: phone/browser के अनुसार compatible printer app या Print dialog की जरूरत हो सकती है।</div><div id="lastBillActions" class="row" style="display:none;margin-top:10px"><button class="secondary" onclick="printLastBill()">🖨️ 58mm Print</button><button class="secondary" onclick="print80mmBill()">🖨️ 80mm Print</button><button class="secondary" onclick="bluetoothPrintLastBill()">🔵 Bluetooth Connect & Print</button><button class="secondary" onclick="downloadLastBillPDF()">📄 PDF</button><button class="secondary" onclick="shareBillToWhatsApp(getLastSavedBill())">📲 WhatsApp</button><button class="secondary" onclick="shareBillPNG()">🖼️ Bill PNG</button></div><div id="lastBillSavedMsg" class="notice" style="display:none;margin-top:8px"></div>
+ <button onclick="saveBill()" id="billSaveBtn">💾 Bill Save करें</button><button class="secondary hidden" onclick="cancelBillEdit()" id="billEditCancelBtn">✖️ Edit Cancel</button><div class="muted small">🖨️ 58mm Bluetooth printer: phone/browser के अनुसार compatible printer app या Print dialog की जरूरत हो सकती है।</div><div id="lastBillActions" class="row" style="display:none;margin-top:10px"><button class="secondary" onclick="printLastBill()">🖨️ 58mm Print</button><button class="secondary" onclick="print80mmBill()">🖨️ 80mm Print</button><button class="secondary" onclick="bluetoothPrintLastBill()">🔵 Bluetooth Connect & Print</button><button class="secondary" onclick="downloadLastBillPDF()">📄 PDF</button><button class="secondary" onclick="whatsappLastBill()">📲 WhatsApp</button></div><div id="lastBillSavedMsg" class="notice" style="display:none;margin-top:8px"></div>
  <div id="billMsg"></div><div class="row"><button class="secondary" onclick="loadBillHistory()">📚 Billing History</button><button class="secondary" onclick="downloadBillHistoryCSV()">⬇️ Bills CSV</button></div><div id="billHistory" class="small"></div><div id="billHistoryList" class="small"></div>
 </div>
 <div id="stockCard" class="card module-card">
@@ -260,7 +211,7 @@ body.page-mode .page-active .table-scroll td{
  <div class="section-title">⚙️ Settings</div><div class="row"><input id="adminMilkRate" type="number" min="0" value="70" placeholder="Milk Rate ₹/L"><input id="whatsappNumber" value="8871983383" placeholder="WhatsApp Number"></div>
  <button onclick="saveLocalSettings()">💾 Settings Save</button><div id="settingsMsg"></div><div class="muted">Online payment gateway अभी future phase में रहेगा।</div>
 </div>
-<div class="card"><div class="muted">Staff: <b id="userEmail"></b></div><button id="logoutBtn" class="secondary">Logout</button></div><div id="scanCard" class="card"><h2>📷 QR से ग्राहक खोलें</h2><button id="scanBtn">QR Scan शुरू करें</button><button id="stopScanBtn" class="gray hidden">Scan बंद करें</button><div id="reader" class="hidden"></div><div id="scanMsg"></div></div><div id="customerSearchCard" class="card"><h2>ग्राहक खोजें</h2><input id="searchId" placeholder="Customer ID जैसे SRD-001"><button id="openCustomerBtn">ग्राहक खोलें</button><button id="newCustomerBtn" class="secondary">नया ग्राहक</button><div style="margin-top:18px"><h3 style="margin-bottom:8px">📋 ग्राहक सूची</h3><input id="customerListSearch" placeholder="नाम / ID / मोबाइल से ग्राहक खोजें" oninput="filterCustomerList()"><div id="customerList" class="customer-list"><div class="muted">ग्राहक सूची लोड हो रही है…</div></div></div></div><div id="customerCard" class="card hidden"><div class="customer-box"><h2 id="custName">-</h2><div class="muted">Customer ID: <b id="custId">-</b></div><div class="muted">Mobile: <b id="custMobile">-</b></div><button class="secondary" onclick="openEditCustomer()" style="margin-top:10px">✏️ ग्राहक Edit करें</button><button class="secondary" data-admin-only="1" onclick="openCardReplace()" style="margin-top:8px">🔄 QR Card बदलें</button><button class="danger" data-admin-only="1" onclick="deleteCurrentCustomer()" style="margin-top:8px">🗑️ ग्राहक Delete करें</button><div id="cardReplaceBox" class="notice hidden" style="margin-top:10px"><b>🔄 QR Card बदलें</b><div class="muted" style="margin-top:5px">पुराना QR Card तुरंत deactivate होगा और नया scanned Card इसी customer से link होगा।</div><button id="replaceCardScanBtn" class="secondary" style="margin-top:8px">📷 नया Card Scan करें</button><button id="replaceCardStopBtn" class="gray hidden" style="margin-top:8px">Scan बंद करें</button><div id="replaceCardReader" class="hidden" style="margin-top:10px"></div><div id="replaceCardMsg"></div></div><div style="margin-top:8px"><span id="custType" class="pill">Prepaid</span></div><hr><div class="muted">बाकी दूध</div><div class="balance"><span id="custLitres">0</span> L</div><div class="muted">Prepaid balance value: ₹<span id="custBalance">0</span></div><div class="muted">Monthly credit due: ₹<span id="custDue">0</span></div></div><h3>आज दूध दें</h3><div class="row"><button class="milkBtn" data-litre="0.5">0.5 L</button><button class="milkBtn" data-litre="1">1 L</button><button class="milkBtn" data-litre="1.5">1.5 L</button><button class="milkBtn" data-litre="2">2 L</button></div><div class="row" style="margin-top:10px"><input id="customMilkAmount" type="number" min="1" step="1" inputmode="numeric" placeholder="Custom दूध ₹ (Rate ₹70/L)"><button id="customMilkBtn" class="secondary">₹ Custom दूध दें</button></div><div id="creditActions" class="hidden"><h3>Monthly Udhar</h3><div class="row"><input id="creditPayment" type="number" min="1" step="1" placeholder="Payment ₹"><button id="paymentBtn">Payment जमा</button></div></div><div id="prepaidRechargeActions"><h3>Prepaid Recharge</h3><div class="row"><input id="rechargeLitres" type="number" step="0.5" min="0.5" placeholder="Litres"><button id="rechargeBtn">+ Recharge</button></div></div><h3>History</h3><div id="history"></div></div><div id="newCustomerCard" class="card hidden"><h2>नया ग्राहक + Card Activate</h2><div class="notice">पहले से छपे हुए खाली QR Card को पहले scan करें। Scan के बाद यही card इस नए ग्राहक के साथ permanently link हो जाएगा।</div><button id="newCardScanBtn">📷 खाली Card QR Scan करें</button><button id="newCardStopBtn" class="gray hidden">Scan बंद करें</button><div id="newCardReader" class="hidden" style="margin-top:10px"></div><div id="newCardMsg"></div><div id="selectedCard" class="pill hidden" style="margin:8px 0">Card: <span id="selectedCardId"></span></div><input id="newId" placeholder="Customer ID जैसे SRD-002"><input id="newName" placeholder="ग्राहक का नाम"><input id="newMobile" placeholder="मोबाइल नंबर"><select id="newType"><option value="prepaid">Prepaid</option><option value="monthly">Monthly Udhar</option></select><input id="newLitres" type="number" step="0.5" min="0" placeholder="Prepaid litres (Prepaid ग्राहक के लिए)"><button id="createBtn" disabled>Card scan करने के बाद ग्राहक बनाएं</button><div id="createMsg"></div></div>
+<div class="card"><div class="muted">Staff: <b id="userEmail"></b></div><button id="logoutBtn" class="secondary">Logout</button></div><div id="scanCard" class="card"><h2>📷 QR से ग्राहक खोलें</h2><button id="scanBtn">QR Scan शुरू करें</button><button id="stopScanBtn" class="gray hidden">Scan बंद करें</button><div id="reader" class="hidden"></div><div id="scanMsg"></div></div><div id="customerSearchCard" class="card"><h2>ग्राहक खोजें</h2><input id="searchId" placeholder="Customer ID जैसे SRD-001"><button id="openCustomerBtn">ग्राहक खोलें</button><button id="newCustomerBtn" class="secondary">नया ग्राहक</button><div style="margin-top:18px"><h3 style="margin-bottom:8px">📋 ग्राहक सूची</h3><input id="customerListSearch" placeholder="नाम / ID / मोबाइल से ग्राहक खोजें" oninput="filterCustomerList()"><div id="customerList" class="customer-list"><div class="muted">ग्राहक सूची लोड हो रही है…</div></div></div></div><div id="customerCard" class="card hidden"><div class="customer-box"><h2 id="custName">-</h2><div class="muted">Customer ID: <b id="custId">-</b></div><div class="muted">Mobile: <b id="custMobile">-</b></div><button class="secondary" onclick="openEditCustomer()" style="margin-top:10px">✏️ ग्राहक Edit करें</button><button class="secondary" data-admin-only="1" onclick="openCardReplace()" style="margin-top:8px">🔄 QR Card बदलें</button><button class="danger" data-admin-only="1" onclick="deleteCurrentCustomer()" style="margin-top:8px">🗑️ ग्राहक Delete करें</button><div id="cardReplaceBox" class="notice hidden" style="margin-top:10px"><b>🔄 QR Card बदलें</b><div class="muted" style="margin-top:5px">पुराना QR Card तुरंत deactivate होगा और नया scanned Card इसी customer से link होगा।</div><button id="replaceCardScanBtn" class="secondary" style="margin-top:8px">📷 नया Card Scan करें</button><button id="replaceCardStopBtn" class="gray hidden" style="margin-top:8px">Scan बंद करें</button><div id="replaceCardReader" class="hidden" style="margin-top:10px"></div><div id="replaceCardMsg"></div></div><div style="margin-top:8px"><span id="custType" class="pill">Prepaid</span></div><hr><div class="muted">बाकी दूध</div><div class="balance"><span id="custLitres">0</span> L</div><div class="muted">Prepaid balance value: ₹<span id="custBalance">0</span></div><div class="muted">Monthly credit due: ₹<span id="custDue">0</span></div></div><h3>आज दूध दें</h3><div class="row"><button class="milkBtn" data-litre="0.5">0.5 L</button><button class="milkBtn" data-litre="1">1 L</button><button class="milkBtn" data-litre="1.5">1.5 L</button><button class="milkBtn" data-litre="2">2 L</button></div><div id="creditActions" class="hidden"><h3>Monthly Udhar</h3><div class="row"><input id="creditPayment" type="number" min="1" step="1" placeholder="Payment ₹"><button id="paymentBtn">Payment जमा</button></div></div><div id="prepaidRechargeActions"><h3>Prepaid Recharge</h3><div class="row"><input id="rechargeLitres" type="number" step="0.5" min="0.5" placeholder="Litres"><button id="rechargeBtn">+ Recharge</button></div></div><h3>History</h3><div id="history"></div></div><div id="newCustomerCard" class="card hidden"><h2>नया ग्राहक + Card Activate</h2><div class="notice">पहले से छपे हुए खाली QR Card को पहले scan करें। Scan के बाद यही card इस नए ग्राहक के साथ permanently link हो जाएगा।</div><button id="newCardScanBtn">📷 खाली Card QR Scan करें</button><button id="newCardStopBtn" class="gray hidden">Scan बंद करें</button><div id="newCardReader" class="hidden" style="margin-top:10px"></div><div id="newCardMsg"></div><div id="selectedCard" class="pill hidden" style="margin:8px 0">Card: <span id="selectedCardId"></span></div><input id="newId" placeholder="Customer ID जैसे SRD-002"><input id="newName" placeholder="ग्राहक का नाम"><input id="newMobile" placeholder="मोबाइल नंबर"><select id="newType"><option value="prepaid">Prepaid</option><option value="monthly">Monthly Udhar</option></select><input id="newLitres" type="number" step="0.5" min="0" placeholder="Prepaid litres (Prepaid ग्राहक के लिए)"><button id="createBtn" disabled>Card scan करने के बाद ग्राहक बनाएं</button><div id="createMsg"></div></div>
 <div id="reportCard" class="card">
   <h2>📈 Custom Report</h2>
   <div class="notice">अपनी तारीख चुनें और website की पुरानी entries में से report देखें या CSV में download करें। पुराना transaction/history delete नहीं होगा।</div>
@@ -327,13 +278,8 @@ function normalizeCardQr(code){let raw=String(code||'').trim(),value=raw;try{con
 async function openByQr(code){const value=normalizeCardQr(code);if(!value)return msg('scanMsg','QR खाली है।',true);try{const cardSnap=await db.ref('cards/'+value).once('value');if(cardSnap.exists()){const card=cardSnap.val();if(card.status==='active'&&card.customerId)return openCustomer(card.customerId);return msg('scanMsg','यह QR Card अभी activate नहीं हुआ है।',true)}return openCustomer(value)}catch(e){msg('scanMsg',e.message,true)}}
 
 async function openCustomer(id){if(!id)return msg('scanMsg','Customer ID डालें।',true);try{const snap=await db.ref('customers/'+id).once('value');if(!snap.exists())return msg('scanMsg','Customer नहीं मिला: '+id,true);currentCustomerId=id;renderCustomer(snap.val());showPage('customerCard','Customer');loadHistory(id)}catch(e){msg('scanMsg',e.message,true)}}function renderCustomer(c){$('dashCustomer').textContent=c.name||'-';$('dashLitres').textContent=(Number(c.litres||0).toFixed(1).replace('.0',''))+' L';$('dashAmount').textContent='₹'+Math.round(Number(c.balance||c.due||0));$('custName').textContent=c.name||'-';$('custId').textContent=c.id||currentCustomerId;$('custMobile').textContent=c.mobile||'-';$('custType').textContent=c.type==='monthly'?'Monthly Udhar':'Prepaid';$('custLitres').textContent=Number(c.litres||0).toFixed(1).replace('.0','');$('custBalance').textContent=Math.round(Number(c.balance||0));$('custDue').textContent=Math.round(Number(c.due||0));$('creditActions').classList.toggle('hidden',c.type!=='monthly');$('prepaidRechargeActions').classList.toggle('hidden',c.type==='monthly')}
-async function recordMilkDelivery(litres,amount){if(!currentCustomerId)return;if(!Number.isFinite(litres)||litres<=0||!Number.isFinite(amount)||amount<=0)return msg('scanMsg','Valid दूध मात्रा/रुपये डालें।',true);const ref=db.ref('customers/'+currentCustomerId);try{const result=await ref.transaction(c=>{if(!c)return c;if(c.type==='monthly'){c.due=+(Number(c.due||0)+amount).toFixed(2)}else{const have=Number(c.litres||0),balance=Number(c.balance||0);if(have+1e-9<litres||balance+0.009<amount)return;c.litres=+(have-litres).toFixed(6);c.balance=+(Math.max(0,balance-amount)).toFixed(2)}c.updatedAt=firebase.database.ServerValue.TIMESTAMP;return c});if(!result.committed)return msg('scanMsg','Prepaid में इतना दूध balance उपलब्ध नहीं है।',true);await ref.child('logs').push({type:'milk',litresChange:-litres,amountChange:-amount,by:auth.currentUser.email,at:firebase.database.ServerValue.TIMESTAMP});renderCustomer(result.snapshot.val());await loadHistory(currentCustomerId);msg('scanMsg',Number(litres).toFixed(3).replace(/0+$/,'').replace(/\.$/,'')+' L / ₹'+Math.round(amount)+' का दूध दर्ज हो गया ✅')}catch(e){msg('scanMsg',e.message,true)}}
-async function giveMilk(litres){return recordMilkDelivery(litres,litres*RATE)}
-async function giveMilkByAmount(amount){amount=Number(amount);if(!Number.isFinite(amount)||amount<=0)return msg('scanMsg','Valid Custom ₹ amount डालें।',true);const litres=amount/RATE;await recordMilkDelivery(litres,amount);if($('customMilkAmount'))$('customMilkAmount').value=''}
-document.querySelectorAll('.milkBtn').forEach(b=>b.onclick=()=>giveMilk(Number(b.dataset.litre)));
-$('customMilkBtn').onclick=()=>giveMilkByAmount($('customMilkAmount').value);
-$('paymentBtn').onclick=async()=>{const amount=Number($('creditPayment').value||0);if(!currentCustomerId||amount<=0)return;const ref=db.ref('customers/'+currentCustomerId);try{const result=await ref.transaction(c=>{if(!c)return c;c.due=Math.max(0,+(Number(c.due||0)-amount).toFixed(2));c.updatedAt=firebase.database.ServerValue.TIMESTAMP;return c});if(!result.committed)return;await ref.child('logs').push({type:'payment',litresChange:0,amountChange:amount,by:auth.currentUser.email,at:firebase.database.ServerValue.TIMESTAMP});$('creditPayment').value='';renderCustomer(result.snapshot.val());await loadHistory(currentCustomerId);msg('scanMsg','Payment दर्ज हो गया ✅')}catch(e){msg('scanMsg',e.message,true)}};$('rechargeBtn').onclick=async()=>{const litres=Number($('rechargeLitres').value||0);if(!currentCustomerId||litres<=0)return;const current=await db.ref('customers/'+currentCustomerId).once('value');if(current.exists()&&current.val().type==='monthly')return msg('scanMsg','Monthly Udhar ग्राहक के लिए Prepaid Recharge उपलब्ध नहीं है।',true);const ref=db.ref('customers/'+currentCustomerId);try{const result=await ref.transaction(c=>{if(!c)return c;c.litres=+(Number(c.litres||0)+litres).toFixed(2);c.balance=+(c.litres*RATE).toFixed(2);c.updatedAt=firebase.database.ServerValue.TIMESTAMP;return c});if(!result.committed)return;await ref.child('logs').push({type:'recharge',litresChange:litres,amountChange:litres*RATE,by:auth.currentUser.email,at:firebase.database.ServerValue.TIMESTAMP});$('rechargeLitres').value='';renderCustomer(result.snapshot.val());await loadHistory(currentCustomerId);msg('scanMsg',litres+' L recharge हो गया ✅')}catch(e){msg('scanMsg',e.message,true)}};async function editRecharge(logId,oldLitres){try{if(!currentCustomerId||!logId)return;const current=await db.ref('customers/'+currentCustomerId).once('value');if(!current.exists())return msg('scanMsg','Customer नहीं मिला।',true);if(current.val().type==='monthly')return msg('scanMsg','Monthly Udhar ग्राहक के लिए Recharge edit उपलब्ध नहीं है।',true);const old=Number(oldLitres||0);const input=prompt('Recharge कितने Litres होना चाहिए?\nपुराना: '+old+' L',String(old));if(input===null)return;const litres=Number(input);if(!Number.isFinite(litres)||litres<0)return msg('scanMsg','Valid litres डालें।',true);const ref=db.ref('customers/'+currentCustomerId);const result=await ref.transaction(c=>{if(!c)return c;const cur=Number(c.litres||0);const next=+(cur-old+litres).toFixed(2);if(next<0)return; c.litres=next;c.balance=+(next*RATE).toFixed(2);c.updatedAt=firebase.database.ServerValue.TIMESTAMP;return c});if(!result.committed)return msg('scanMsg','Recharge edit नहीं हो पाया।',true);await ref.child('logs/'+logId).update({litresChange:litres,amountChange:+(litres*RATE).toFixed(2),editedAt:firebase.database.ServerValue.TIMESTAMP,editedBy:auth.currentUser.email});renderCustomer(result.snapshot.val());await loadHistory(currentCustomerId);msg('scanMsg','Recharge '+old+' L से '+litres+' L कर दिया गया ✅')}catch(e){msg('scanMsg','Recharge edit नहीं हो पाया: '+e.message,true)}}
-async function loadHistory(id){const snap=await db.ref('customers/'+id+'/logs').orderByChild('at').limitToLast(20).once('value');let rows=[];snap.forEach(s=>{const x=s.val(),d=x.at?new Date(x.at).toLocaleString('en-IN'):'';let t=x.type==='milk'?'दूध':x.type==='payment'?'Payment':x.type==='recharge'?'Recharge':x.type==='edit'?'Customer Edit':x.type==='create'?'Account Create':'Account';const action=x.type==='recharge'?'<button class="secondary" style="padding:4px 8px;margin:0" onclick="editRecharge(\''+s.key+'\','+Number(x.litresChange||0)+')">✏️ Edit</button>':'';rows.unshift('<tr><td>'+t+'</td><td>'+(x.litresChange||0)+' L</td><td>₹'+Math.round(Math.abs(Number(x.amountChange||0)))+'</td><td>'+d+'</td><td>'+action+'</td></tr>')});$('history').innerHTML=rows.length?'<table><tr><th>Type</th><th>Litres</th><th>Amount</th><th>Time</th><th>Action</th></tr>'+rows.join('')+'</table>':'<span class="muted">अभी कोई history नहीं।</span>'}
+async function giveMilk(litres){if(!currentCustomerId)return;const ref=db.ref('customers/'+currentCustomerId);try{const result=await ref.transaction(c=>{if(!c)return c;if(c.type==='monthly'){c.due=+(Number(c.due||0)+litres*RATE).toFixed(2)}else{const have=Number(c.litres||0);if(have<litres)return;c.litres=+(have-litres).toFixed(2);c.balance=+(c.litres*RATE).toFixed(2)}c.updatedAt=firebase.database.ServerValue.TIMESTAMP;return c});if(!result.committed)return msg('scanMsg','Prepaid में इतना दूध balance उपलब्ध नहीं है।',true);await ref.child('logs').push({type:'milk',litresChange:-litres,amountChange:-litres*RATE,by:auth.currentUser.email,at:firebase.database.ServerValue.TIMESTAMP});renderCustomer(result.snapshot.val());await loadHistory(currentCustomerId);msg('scanMsg',litres+' L दूध दर्ज हो गया ✅')}catch(e){msg('scanMsg',e.message,true)}}document.querySelectorAll('.milkBtn').forEach(b=>b.onclick=()=>giveMilk(Number(b.dataset.litre)));
+$('paymentBtn').onclick=async()=>{const amount=Number($('creditPayment').value||0);if(!currentCustomerId||amount<=0)return;const ref=db.ref('customers/'+currentCustomerId);try{const result=await ref.transaction(c=>{if(!c)return c;c.due=Math.max(0,+(Number(c.due||0)-amount).toFixed(2));c.updatedAt=firebase.database.ServerValue.TIMESTAMP;return c});if(!result.committed)return;await ref.child('logs').push({type:'payment',litresChange:0,amountChange:amount,by:auth.currentUser.email,at:firebase.database.ServerValue.TIMESTAMP});$('creditPayment').value='';renderCustomer(result.snapshot.val());await loadHistory(currentCustomerId);msg('scanMsg','Payment दर्ज हो गया ✅')}catch(e){msg('scanMsg',e.message,true)}};$('rechargeBtn').onclick=async()=>{const litres=Number($('rechargeLitres').value||0);if(!currentCustomerId||litres<=0)return;const current=await db.ref('customers/'+currentCustomerId).once('value');if(current.exists()&&current.val().type==='monthly')return msg('scanMsg','Monthly Udhar ग्राहक के लिए Prepaid Recharge उपलब्ध नहीं है।',true);const ref=db.ref('customers/'+currentCustomerId);try{const result=await ref.transaction(c=>{if(!c)return c;c.litres=+(Number(c.litres||0)+litres).toFixed(2);c.balance=+(c.litres*RATE).toFixed(2);c.updatedAt=firebase.database.ServerValue.TIMESTAMP;return c});if(!result.committed)return;await ref.child('logs').push({type:'recharge',litresChange:litres,amountChange:litres*RATE,by:auth.currentUser.email,at:firebase.database.ServerValue.TIMESTAMP});$('rechargeLitres').value='';renderCustomer(result.snapshot.val());await loadHistory(currentCustomerId);msg('scanMsg',litres+' L recharge हो गया ✅')}catch(e){msg('scanMsg',e.message,true)}};async function loadHistory(id){const snap=await db.ref('customers/'+id+'/logs').orderByChild('at').limitToLast(20).once('value');let rows=[];snap.forEach(s=>{const x=s.val(),d=x.at?new Date(x.at).toLocaleString('en-IN'):'';let t=x.type==='milk'?'दूध':x.type==='payment'?'Payment':x.type==='recharge'?'Recharge':x.type==='edit'?'Customer Edit':x.type==='create'?'Account Create':'Account';rows.unshift('<tr><td>'+t+'</td><td>'+(x.litresChange||0)+' L</td><td>₹'+Math.round(Math.abs(Number(x.amountChange||0)))+'</td><td>'+d+'</td></tr>')});$('history').innerHTML=rows.length?'<table><tr><th>Type</th><th>Litres</th><th>Amount</th><th>Time</th></tr>'+rows.join('')+'</table>':'<span class="muted">अभी कोई history नहीं।</span>'}
 async function stopScan(){if(scanner){try{await scanner.stop()}catch(e){}try{scanner.clear()}catch(e){}scanner=null}$('reader').classList.add('hidden');$('stopScanBtn').classList.add('hidden');$('scanBtn').classList.remove('hidden')}$('stopScanBtn').onclick=stopScan;$('scanBtn').onclick=async()=>{if(!window.Html5Qrcode)return msg('scanMsg','QR scanner load नहीं हुआ। पेज refresh करें।',true);$('reader').classList.remove('hidden');$('stopScanBtn').classList.remove('hidden');$('scanBtn').classList.add('hidden');scanner=new Html5Qrcode('reader');try{await scanner.start({facingMode:'environment'},{fps:20,qrbox:250},decoded=>{stopScan();openByQr(decoded)},()=>{})}catch(e){msg('scanMsg','Camera permission दें और फिर कोशिश करें।',true)}};
 async function stopNewCustomerScan(){if(newCustomerScanner){try{await newCustomerScanner.stop()}catch(e){}try{newCustomerScanner.clear()}catch(e){}newCustomerScanner=null}$('newCardReader').classList.add('hidden');$('newCardStopBtn').classList.add('hidden');$('newCardScanBtn').classList.remove('hidden')}
 $('newCardStopBtn').onclick=stopNewCustomerScan;
@@ -542,7 +488,7 @@ function addBillItem(item){billItems.push(item||{product:'Milk',unit:'L',qty:1,r
 function renderBillItems(){const box=$('billItems');if(!box)return;box.innerHTML=billItems.map((x,i)=>`<div class="bill-item"><select onchange="billItems[${i}].product=this.value;billItems[${i}].unit=this.options[this.selectedIndex].dataset.unit;billItems[${i}].rate=Number(this.options[this.selectedIndex].dataset.rate);renderBillItems()">${BILL_PRODUCTS.map(p=>`<option value="${esc(p[0])}" data-unit="${p[1]}" data-rate="${p[2]}" ${x.product===p[0]?'selected':''}>${p[0]}</option>`).join('')}</select><input type="number" min="0" step="0.01" value="${x.qty}" onchange="billItems[${i}].qty=Number(this.value);calcBill()"><input type="number" min="0" step="0.01" value="${x.rate}" onchange="billItems[${i}].rate=Number(this.value);calcBill()"><button class="gray bill-remove" onclick="billItems.splice(${i},1);renderBillItems()">×</button></div>`).join('');calcBill()}
 function calcBill(){let sub=billItems.reduce((a,x)=>a+Number(x.qty||0)*Number(x.rate||0),0);let d=Number($('billDiscount')?.value||0);if($('billDiscountType')?.value==='pct')d=sub*d/100;d=Math.min(sub,Math.max(0,d));let total=sub-d,received=Math.max(0,Number($('billReceived')?.value||0));received=Math.min(received,total);let pending=total-received;for(const id of ['billSubtotal','billDiscountShow','billTotal','billReceivedShow','billPending'])if($(id))$(id).textContent='₹'+Math.round(id==='billSubtotal'?sub:id==='billDiscountShow'?d:id==='billTotal'?total:id==='billReceivedShow'?received:pending);return {sub,d,total,received,pending}}
 function normalizeMobile(v){let d=String(v??'').replace(/\D/g,'');if(d.length===12&&d.startsWith('91'))d=d.slice(2);if(d.length===11&&d.startsWith('0'))d=d.slice(1);return d}
-async function findCustomerMobile(ref,name){const raw=String(ref||'').trim(),nm=String(name||'').trim().toLowerCase(),norm=normalizeMobile(raw);if(norm.length===10)return norm;if(raw){const direct=await db.ref('customers/'+raw.toUpperCase()).once('value');if(direct.exists())return normalizeMobile(direct.val()?.mobile||'')}const all=await db.ref('customers').once('value');let found='';all.forEach(ch=>{if(found)return;const c=ch.val()||{};const cm=normalizeMobile(c.mobile||'');const cid=String(ch.key||'').trim().toLowerCase();const cn=String(c.name||c.customerName||'').trim().toLowerCase();if(nm&&cn===nm&&cm.length===10)found=cm;else if(raw&&cid===raw.toLowerCase()&&cm.length===10)found=cm});return found}
+async function findCustomerMobile(ref,name){const raw=String(ref||'').trim(),nm=String(name||'').trim().toLowerCase(),norm=normalizeMobile(raw);if(raw){const direct=await db.ref('customers/'+raw.toUpperCase()).once('value');if(direct.exists())return normalizeMobile(direct.val()?.mobile||'')}const all=await db.ref('customers').once('value');let found='';all.forEach(ch=>{if(found)return;const c=ch.val()||{};const cm=normalizeMobile(c.mobile||'');const cid=String(ch.key||'').trim().toLowerCase();const cn=String(c.name||c.customerName||'').trim().toLowerCase();if(norm.length===10&&cm===norm)found=cm;else if(nm&&cn===nm&&cm.length===10)found=cm;else if(raw&&cid===raw.toLowerCase()&&cm.length===10)found=cm});return found}
 ['billDiscount','billDiscountType','billReceived'].forEach(id=>$(id)?.addEventListener('input',calcBill));
 async function billNo(){const ref=db.ref('meta/billCounter');const result=await ref.transaction(v=>Number(v||0)+1);if(!result.committed)throw new Error('Bill number generate नहीं हो पाया।');return 'SRD-'+String(result.snapshot.val()).padStart(6,'0')}
 function setBillEditMode(on,no){
@@ -558,7 +504,7 @@ async function billToCanvas(){
   const el=$('receipt'); if(!el)throw new Error('Bill preview तैयार नहीं हुआ।');
   return await html2canvas(el,billCanvasOptions());
 }
-async function saveBill(thenWhatsApp=false){try{
+async function saveBill(){try{
  if(!auth.currentUser)return msg('billMsg','पहले Staff Login करें।',true);
  if(!billItems.length)return msg('billMsg','कम से कम एक product जोड़ें।',true);
  const t=calcBill(),customer=$('billCustomer').value.trim(),name=$('billName').value.trim()||'Walk-in Customer';
@@ -573,8 +519,7 @@ async function saveBill(thenWhatsApp=false){try{
  setBillEditMode(false);showLastBillActions();renderBillPreview();updateHomeStats();
  msg('billMsg',isEdit?'Bill '+num+' update हो गया ✅':'Bill '+num+' save हो गया ✅');
  loadBillHistory();
- return true;
- }catch(e){msg('billMsg',e.message,true);return false}}
+ }catch(e){msg('billMsg',e.message,true)}}
 function renderBillPreview(){if(!lastBill)return;const b=lastBill;const rows=(b.items||[]).map((x,i)=>`<div class="billbook-row"><span class="c">${i+1}</span><span class="item">${esc(x.product)}</span><span>${x.qty}${esc(x.unit||'')}</span><span>₹${Number(x.rate||0).toFixed(2)}</span><b>₹${(Number(x.qty||0)*Number(x.rate||0)).toFixed(2)}</b></div>`).join('');$('billHistory').innerHTML=`<div class="print-receipt billbook-receipt" id="receipt"><div class="billbook-brand">🥛 SHREE RAM DAIRY</div><div class="billbook-tag">शुद्धता • ताजगी • विश्वास</div><div class="billbook-contact">गाडरवाड़ा, जिला नरसिंहपुर (म.प्र.) &nbsp;|&nbsp; 📞 8871983383</div><div class="billbook-meta"><span><b>Bill No.</b> ${esc(b.billNo)}</span><span><b>Date</b> ${billVisualDate(b.at)}</span></div><div class="billbook-customer"><div><small>CUSTOMER</small><b>${esc(b.customerName||'Walk-in Customer')}</b></div><div><small>CUSTOMER ID / MOBILE</small><b>${esc(b.customerRef||b.customerMobile||'-')}</b></div></div><div class="billbook-head"><span>#</span><span class="item">ITEM</span><span>QTY</span><span>RATE</span><span>AMOUNT</span></div>${rows}<div class="billbook-summary"><div><span>Subtotal</span><b>₹${Number(b.subtotal||0).toFixed(2)}</b></div><div><span>Discount</span><b>₹${Number(b.discount||0).toFixed(2)}</b></div><div class="grand"><span>GRAND TOTAL</span><b>₹${Number(b.total||0).toFixed(2)}</b></div><div><span>Received</span><b>₹${Number(b.received||0).toFixed(2)}</b></div><div><span>Pending Amount</span><b>₹${Number(b.pending||0).toFixed(2)}</b></div><div><span>Payment</span><b>${esc(b.paymentMode||'Cash')}</b></div></div><div class="billbook-footer">धन्यवाद!<br>आपका विश्वास ही हमारी पहचान है</div></div>`}
 function showLastBillActions(){const b=getLastSavedBill();if(!b)return;const a=$('lastBillActions'),m=$('lastBillSavedMsg');if(a)a.style.display='flex';if(m){m.style.display='block';m.innerHTML='✅ Last saved bill: <b>'+esc(b.billNo||'')+'</b> — Bill Image / PDF / Thermal Print / WhatsApp तैयार है।';}}
 function getLastSavedBill(){if(lastBill)return lastBill;try{const raw=localStorage.getItem('srd_last_bill');if(raw){lastBill=JSON.parse(raw);return lastBill;}}catch(e){}return null}
@@ -589,106 +534,9 @@ function thermalText(b,width){
 function printThermal(width=58){if(!ensureBillPreview())return msg('billMsg','पहले Bill Save करें।',true);const b=getLastSavedBill();const holder=document.createElement('div');holder.className='print-only';holder.innerHTML='<pre style="margin:0;white-space:pre-wrap;word-break:break-word;font-family:monospace;font-size:11px;line-height:1.28">'+esc(thermalText(b,width===80?80:58))+'</pre>';holder.dataset.paper=width;document.body.appendChild(holder);const cleanup=()=>{setTimeout(()=>holder.remove(),700);window.removeEventListener('afterprint',cleanup)};window.addEventListener('afterprint',cleanup);setTimeout(()=>window.print(),120)}
 function printLastBill(){printThermal(58)}
 function print80mmBill(){printThermal(80)}
-let srdPrinters=[];let srdSelectedPrinter='';
-let srdBtDevices={};let srdBtDevice=null;let srdBtCharacteristic=null;
-function loadSavedPrinters(){try{srdPrinters=JSON.parse(localStorage.getItem('srd_thermal_printers')||'[]');if(!Array.isArray(srdPrinters))srdPrinters=[];srdSelectedPrinter=localStorage.getItem('srd_selected_printer')||''}catch(e){srdPrinters=[];srdSelectedPrinter=''}}
-function savePrinters(){localStorage.setItem('srd_thermal_printers',JSON.stringify(srdPrinters));if(srdSelectedPrinter)localStorage.setItem('srd_selected_printer',srdSelectedPrinter)}
-function renderPrinterList(){loadSavedPrinters();const box=$('printerList'),cur=$('printerCurrent');if(!box)return;const connected=!!(srdBtDevice?.gatt?.connected);cur.innerHTML=srdSelectedPrinter?'✅ Selected: <b>'+esc(srdSelectedPrinter)+'</b>'+(connected?' <span style="color:#07875f">• Connected</span>':''):'कोई printer select नहीं है';box.innerHTML=srdPrinters.length?srdPrinters.map((n,i)=>'<div class="printer-item '+(n===srdSelectedPrinter?'selected':'')+'"><div><b>🖨️ '+esc(n)+'</b><div class="printer-status">'+(n===srdSelectedPrinter&&connected?'Bluetooth Connected':'Thermal printer')+'</div></div><button class="secondary" onclick="selectPrinter('+i+')">'+(n===srdSelectedPrinter?'Selected':'Select')+'</button></div>').join(''):'<div class="muted">अभी कोई printer saved नहीं है। Bluetooth Scan करें।</div>'}
-function openPrinterModal(){if(!ensureBillPreview())return msg('billMsg','पहले Bill Save करें।',true);loadSavedPrinters();renderPrinterList();$('printerModal').classList.remove('hidden');$('printerModal').setAttribute('aria-hidden','false')}
-function closePrinterModal(){$('printerModal')?.classList.add('hidden');$('printerModal')?.setAttribute('aria-hidden','true')}
-function selectPrinter(i){loadSavedPrinters();if(!srdPrinters[i])return;srdSelectedPrinter=srdPrinters[i];savePrinters();const d=Object.values(srdBtDevices).find(x=>x?.name===srdSelectedPrinter);srdBtDevice=d||null;srdBtCharacteristic=null;renderPrinterList();msg('printerMsg',d?'Printer select हो गया: '+esc(srdSelectedPrinter)+' ✅':'Printer '+esc(srdSelectedPrinter)+' select हो गया। अब Bluetooth Scan करके इसी printer को connect करें।')}
-function addManualPrinter(){const n=prompt('Bluetooth printer का नाम डालें:','PT-280_CB87');if(!n)return;const name=n.trim();if(!name)return;if(!srdPrinters.includes(name))srdPrinters.push(name);srdSelectedPrinter=name;savePrinters();renderPrinterList();msg('printerMsg',name+' save हो गया। अब Bluetooth Scan करके actual connection करें।')}
-async function scanThermalPrinters(){
-  if(!('bluetooth' in navigator))return msg('printerMsg','इस browser में Web Bluetooth उपलब्ध नहीं है। Android Chrome में कोशिश करें।',true);
-  try{
-    msg('printerMsg','Bluetooth printer scan हो रहा है…');
-    const device=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:['0000ff00-0000-1000-8000-00805f9b34fb','000018f0-0000-1000-8000-00805f9b34fb','generic_access','generic_attribute']});
-    const name=device?.name||device?.id||'Bluetooth Printer';
-    srdBtDevices[device.id]=device;srdBtDevice=device;
-    if(!srdPrinters.includes(name))srdPrinters.push(name);
-    srdSelectedPrinter=name;savePrinters();
-    device.addEventListener?.('gattserverdisconnected',()=>{if(srdBtDevice?.id===device.id){srdBtCharacteristic=null;renderPrinterList();}});
-    renderPrinterList();msg('printerMsg',name+' scan होकर select हो गया ✅ अब Printer Select करें।');
-  }catch(e){if(e?.name!=='NotFoundError')msg('printerMsg','Bluetooth scan नहीं हो पाया: '+(e.message||e),true)}
-}
-async function connectBluetoothPrinter(device){
-  if(!device)throw new Error('पहले Bluetooth Scan करके printer चुनें।');
-  if(!device.gatt)throw new Error('इस device में Web Bluetooth/GATT support नहीं मिला।');
-  if(!device.gatt.connected)await device.gatt.connect();
-  let services=[];
-  for(const uuid of ['0000ff00-0000-1000-8000-00805f9b34fb','000018f0-0000-1000-8000-00805f9b34fb']){try{const svc=await device.gatt.getPrimaryService(uuid);if(svc)services.push(svc)}catch(e){}}
-  if(!services.length){try{services=await device.gatt.getPrimaryServices()}catch(e){services=[]}}
-  let writable=null;
-  for(const service of services){let chars=[];try{chars=await service.getCharacteristics()}catch(e){continue}for(const ch of chars){const p=ch.properties||{};if(p.writeWithoutResponse||p.write){writable=ch;break}}if(writable)break}
-  if(!writable)throw new Error('Printer का writable Bluetooth channel नहीं मिला। इस PT-280 variant को Android printer app/SDK की जरूरत हो सकती है।');
-  srdBtCharacteristic=writable;return writable;
-}
-function escPosBytes(text){const safe=String(text||'').replace(/₹/g,'Rs ').replace(/[^\x09\x0A\x0D\x20-\x7E]/g,'');return new Uint8Array(unescape(encodeURIComponent(safe)).split('').map(c=>c.charCodeAt(0)))}
-async function writeEscPos(data){if(!srdBtCharacteristic)throw new Error('Printer Bluetooth channel connected नहीं है।');const max=20;for(let i=0;i<data.length;i+=max){const chunk=data.slice(i,Math.min(i+max,data.length));if(srdBtCharacteristic.properties?.writeWithoutResponse&&srdBtCharacteristic.writeValueWithoutResponse)await srdBtCharacteristic.writeValueWithoutResponse(chunk);else await srdBtCharacteristic.writeValue(chunk);await new Promise(r=>setTimeout(r,10))}}
-async function directBluetoothPrint(b){
-  const device=Object.values(srdBtDevices).find(d=>d?.name===srdSelectedPrinter)||null;srdBtDevice=device;if(!device)throw new Error('इस page session में '+(srdSelectedPrinter||'printer')+' उपलब्ध नहीं है। पहले Bluetooth Scan करें।');
-  await connectBluetoothPrinter(device);const text=thermalText(b,58).replace(/₹/g,'Rs ');await writeEscPos(new Uint8Array([0x1B,0x40]));await writeEscPos(escPosBytes(text+'\n\n\n'));await writeEscPos(new Uint8Array([0x1D,0x56,0x00]));srdSelectedPrinter=device.name||srdSelectedPrinter;savePrinters();renderPrinterList();return true;
-}
-async function connectSelectedPrinter(){
-  loadSavedPrinters();if(!srdSelectedPrinter)return msg('printerMsg','पहले printer select करें।',true);const dev=Object.values(srdBtDevices).find(d=>d?.name===srdSelectedPrinter)||null;srdBtDevice=dev;srdBtCharacteristic=null;
-  if(!dev)return msg('printerMsg','यह printer saved है लेकिन इस page session में Bluetooth device उपलब्ध नहीं है। 🔍 Bluetooth Scan दबाकर फिर '+esc(srdSelectedPrinter)+' चुनें।',true);
-  try{msg('printerMsg','🔗 '+esc(srdSelectedPrinter)+' से connect हो रहा है…');await connectBluetoothPrinter(dev);renderPrinterList();msg('printerMsg','✅ Printer connected. अब Bill print हो रहा है…');await directBluetoothPrint(getLastSavedBill());closePrinterModal();msg('billMsg','✅ '+esc(srdSelectedPrinter)+' पर Bill direct Bluetooth से print हो गया।')}catch(e){msg('printerMsg','Direct Bluetooth print नहीं हो पाया: '+(e.message||e),true)}
-}
-function bluetoothPrintLastBill(){openPrinterModal()}
-loadSavedPrinters();
+function bluetoothPrintLastBill(){if(!ensureBillPreview())return msg('billMsg','पहले Bill Save करें।',true);msg('billMsg','Bluetooth thermal printer के लिए पहले 58mm/80mm Print चुनें और device का print dialog/app इस्तेमाल करें।');printThermal(58)}
 async function downloadLastBillPDF(){try{const canvas=await billToCanvas();const {jsPDF}=window.jspdf;const mmW=80,mmH=canvas.height*mmW/canvas.width;const p=new jsPDF({unit:'mm',format:[mmW,mmH]});p.addImage(canvas.toDataURL('image/png',1),'PNG',0,0,mmW,mmH,undefined,'FAST');p.save((getLastSavedBill().billNo||'Bill')+'.pdf');msg('billMsg','Final bill design वाला PDF तैयार हो गया ✅')}catch(e){msg('billMsg','PDF नहीं बन पाया: '+e.message,true)}}
-async function shareBillToWhatsApp(b){
-  try{
-    if(!b)return msg('billMsg','पहले Bill Save करें।',true);
-    let mobile=normalizeMobile(b.customerMobile||'');
-    if(mobile.length!==10)mobile=normalizeMobile(b.customerRef||'');
-    if(mobile.length!==10){try{mobile=normalizeMobile(await findCustomerMobile(b.customerRef,b.customerName)||'')}catch(e){}}
-    if(mobile.length!==10)return msg('billMsg','इस saved bill में valid 10-digit mobile number नहीं मिला।',true);
-    b.customerMobile=mobile; lastBill=b;
-    try{localStorage.setItem('srd_last_bill',JSON.stringify(b))}catch(e){}
-    if(b.billNo)try{await db.ref('bills/'+b.billNo+'/customerMobile').set(mobile)}catch(e){}
-    const directChat='https://wa.me/91'+mobile;
-    if(!window.location.protocol.startsWith('http')){
-      window.location.href=directChat;
-      return msg('billMsg','Automatic PNG के लिए HTTPS hosting/API setup चाहिए। अभी customer की direct WhatsApp chat खोली जा रही है।',true);
-    }
-    if(typeof html2canvas==='undefined')return msg('billMsg','Bill image tool load नहीं हुआ। Page reload करके फिर कोशिश करें।',true);
-    msg('billMsg','Bill PNG तैयार हो रहा है…');
-    const canvas=await billToCanvas();
-    const pngBase64=canvas.toDataURL('image/png',1);
-    const r=await fetch('/api/whatsapp/send-bill',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mobile,billNo:b.billNo||'Bill',pngBase64})});
-    const data=await r.json().catch(()=>({}));
-    if(!r.ok||!data.ok)throw new Error(data.error||'WhatsApp Bill send नहीं हो पाया।');
-    msg('billMsg','Bill '+esc(b.billNo||'')+' का PNG WhatsApp पर customer '+esc(mobile)+' को भेज दिया गया ✅',false);
-    return true;
-  }catch(e){
-    try{ const m=normalizeMobile(b?.customerMobile||''); if(m.length===10){ window.location.href='https://wa.me/91'+m; } }catch(_){}
-    msg('billMsg','Automatic PNG send नहीं हो पाया: '+e.message+' — direct customer chat खोली जा रही है।',true); return false;
-  }
-}
-
-async function shareBillPNG(){
-  try{
-    const b=getLastSavedBill();
-    if(!b)return msg('billMsg','पहले Bill Save करें।',true);
-    const canvas=await billToCanvas();
-    const blob=await new Promise((resolve,reject)=>canvas.toBlob(x=>x?resolve(x):reject(new Error('Bill image generate नहीं हुई।')),'image/png',1));
-    const file=new File([blob],(b.billNo||'Bill')+'.png',{type:'image/png'});
-    if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){
-      await navigator.share({files:[file],text:'Shree Ram Dairy Bill '+(b.billNo||''),title:'Shree Ram Dairy Bill'});
-      return true;
-    }
-    const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=(b.billNo||'Bill')+'.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000);
-    msg('billMsg','Bill PNG download हो गई।',false); return true;
-  }catch(e){if(e?.name==='AbortError')return false; msg('billMsg','PNG share नहीं हो पाई: '+e.message,true);return false}
-}
-async function whatsappLastBill(){return shareBillToWhatsApp(getLastSavedBill())}
-async function saveBillAndWhatsApp(){
-  try{
-    const ok=await saveBill(true);
-    if(ok)await shareBillToWhatsApp(getLastSavedBill());
-  }catch(e){msg('billMsg',e.message,true)}
-}
+async function whatsappLastBill(){try{const b=getLastSavedBill();if(!b)return msg('billMsg','पहले Bill Save करें।',true);const mobile=normalizeMobile(b.customerMobile||'');const waUrl=mobile.length===10?'https://wa.me/91'+mobile:'';const canvas=await billToCanvas();const blob=await new Promise((resolve,reject)=>canvas.toBlob(x=>x?resolve(x):reject(new Error('Image generate नहीं हुई।')),'image/png',1));const file=new File([blob],(b.billNo||'Bill')+'.png',{type:'image/png'});if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){await navigator.share({files:[file],title:'Shree Ram Dairy Bill'});msg('billMsg',mobile.length===10?'Bill image तैयार है — WhatsApp में इसी customer का chat चुनें।':'Bill image तैयार है। Customer mobile number उपलब्ध नहीं है।');return}const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=(b.billNo||'Bill')+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);if(waUrl){const waWin=window.open(waUrl,'_blank');if(!waWin)msg('billMsg','Bill image download हो गई। WhatsApp popup browser ने block किया है; downloaded image को इसी customer chat में attach करें।',true);else msg('billMsg','Bill image download हो गई और customer के WhatsApp number का chat खोल दिया गया। Image attach करके Send करें।');}else msg('billMsg','Bill image download हो गई। Customer का valid 10-digit WhatsApp number नहीं मिला।',true)}catch(e){msg('billMsg','WhatsApp image तैयार नहीं हो पाई: '+e.message,true)}}
 function startEditBill(b){if(!b)return;editingBillNo=b.billNo;lastBill={...b,at:b.at||Date.now()};$('billCustomer').value=b.customerRef||b.customerMobile||'';$('billName').value=b.customerName||'';$('billDiscount').value=Number(b.discount||0);$('billDiscountType').value='rs';$('billReceived').value=Number(b.received||0);$('billPaymentMode').value=b.paymentMode||'Cash';billItems=(b.items||[]).map(x=>({...x}));renderBillItems();calcBill();setBillEditMode(true,b.billNo);showLastBillActions();renderBillPreview();openPage('billingCard','Billing / Sales');msg('billMsg','Bill '+esc(b.billNo)+' edit mode में है। Bill No. वही रहेगा।')}
 function cancelBillEdit(){setBillEditMode(false);msg('billMsg','Edit cancel कर दिया गया।');}
 async function editSavedBill(no){try{const s=await db.ref('bills/'+no).once('value');if(!s.exists())return msg('billMsg','Bill नहीं मिला।',true);startEditBill(s.val())}catch(e){msg('billMsg',e.message,true)}}
@@ -696,118 +544,8 @@ async function deleteSavedBill(no){if(!auth.currentUser)return msg('billMsg','�
 function clearBillFormForNext(){billItems=[];setBillEditMode(false);renderBillItems();renderBillPreview();}
 
 try{if(getLastSavedBill())showLastBillActions();}catch(e){}
-async function loadBillHistory(){try{
- const snap=await db.ref('bills').limitToLast(100).once('value');let rows=[];snap.forEach(ch=>{const b=ch.val()||{};rows.push(b)});rows.sort((a,b)=>Number(b.at||0)-Number(a.at||0));
- $('billHistoryList').innerHTML=rows.length?'<table><tr><th>Bill</th><th>Date</th><th>Customer</th><th>Mobile</th><th>Total</th><th>Received</th><th>Pending</th><th>Action</th></tr>'+rows.map(b=>{const no=String(b.billNo||'').replace(/'/g,"\\'");return '<tr><td>'+esc(b.billNo||'')+'</td><td>'+(b.at?new Date(b.at).toLocaleString('en-IN'):'')+'</td><td>'+esc(b.customerName||'')+'</td><td>'+esc(b.customerMobile||'-')+'</td><td>₹'+Number(b.total||0).toFixed(2)+'</td><td>₹'+Number(b.received||0).toFixed(2)+'</td><td>₹'+Number(b.pending||0).toFixed(2)+'</td><td><div class="bill-history-actions"><button class="secondary" onclick="openSavedBill(\''+no+'\')">Open</button><button class="secondary" onclick="editSavedBill(\''+no+'\')">Edit</button><button class="secondary" onclick="whatsappSavedBill(\''+no+'\')">📲 WhatsApp</button><button class="gray" onclick="deleteSavedBill(\''+no+'\')">Delete</button></div></td></tr>'}).join('')+'</table>':'<span class="muted">अभी कोई bill नहीं है।</span>';
- }catch(e){msg('billMsg',e.message,true)}}
-async function whatsappSavedBill(no){try{const s=await db.ref('bills/'+no).once('value');if(!s.exists())return msg('billMsg','Bill नहीं मिला।',true);lastBill=s.val();if(!lastBill.at)lastBill.at=Date.now();return await shareBillToWhatsApp(lastBill)}catch(e){msg('billMsg',e.message,true);return false}}
-
-
-// ===== ADVANCE BOOKING MODULE =====
-let editingAdvanceBookingNo=null,lastAdvanceBooking=null;
-function localDateInputValue(d=new Date()){const z=new Date(d.getTime()-d.getTimezoneOffset()*60000);return z.toISOString().slice(0,10)}
-function advanceBookingMsg(t,bad=false){const el=$('advanceBookingMsg');if(!el)return;el.innerHTML='<div class="notice" style="margin-top:8px;color:'+(bad?'#b42318':'#075c45')+'">'+esc(t)+'</div>'}
-function toggleAdvanceBooking(force){const box=$('advanceBookingForm');if(!box)return;const show=force===undefined?box.classList.contains('hidden'):!!force;box.classList.toggle('hidden',!show);if(show){populateAdvanceBookingProducts();if(!$('abBookingDate').value)$('abBookingDate').value=localDateInputValue();if(!$('abPickupDate').value)$('abPickupDate').value=localDateInputValue(new Date(Date.now()+86400000));if(!$('abTime').value)$('abTime').value='08:00';advanceBookingProductChanged();}}
-/* ===== ADVANCE BOOKING NOTIFICATIONS =====
-   3 notifications per day for 3 days, starting on the pickup date.
-   Times: 09:00, 14:00 and 19:00 local time.
-   Browser notifications require permission. This web app can deliver scheduled
-   notifications while the page/Home Screen app is running; iOS/browser JS alone
-   cannot guarantee background delivery after the app is fully closed without a
-   push-notification server/service. */
-const ADV_BOOKING_NOTIFY_TIMES=[[9,0],[14,0],[19,0]];
-const ADV_BOOKING_NOTIFY_DAYS=3;
-const ADV_BOOKING_NOTIFY_STORE='srdAdvanceBookingNotifiedV1';
-function advanceBookingNotifyKey(no,dayIndex,hour,minute){return String(no)+'|'+dayIndex+'|'+hour+':'+minute}
-function getAdvanceBookingNotifyStore(){try{return JSON.parse(localStorage.getItem(ADV_BOOKING_NOTIFY_STORE)||'{}')}catch(e){return {}}}
-function setAdvanceBookingNotifyStore(x){try{localStorage.setItem(ADV_BOOKING_NOTIFY_STORE,JSON.stringify(x))}catch(e){}}
-async function enableAdvanceBookingNotifications(){
-  try{
-    if(!('Notification' in window))return advanceBookingMsg('इस browser में notifications supported नहीं हैं।',true);
-    const p=await Notification.requestPermission();
-    if(p==='granted'){
-      if($('abNotifyBtn'))$('abNotifyBtn').textContent='🔔 Notifications ON';
-      advanceBookingMsg('Advance Booking notifications ON हो गईं ✅');
-      scheduleAllAdvanceBookingNotifications();
-    }else advanceBookingMsg('Notification permission allow नहीं हुई।',true);
-  }catch(e){advanceBookingMsg(e.message||'Notification permission error',true)}
-}
-function showAdvanceBookingNotification(b,dayIndex){
-  try{
-    if(!('Notification' in window)||Notification.permission!=='granted')return;
-    const title='📦 श्री राम डेयरी — Advance Booking';
-    const body=(b.customerName||'ग्राहक')+' की booking '+(b.bookingNo||'')+' • '+(b.product||'')+' '+Number(b.qty||0)+' '+(b.unit||'')+' • आज सामान लेने का दिन ('+(dayIndex+1)+'/3)';
-    new Notification(title,{body,tag:'srd-'+String(b.bookingNo||'')+'-'+dayIndex,renotify:false});
-  }catch(e){console.warn('Advance booking notification:',e)}
-}
-function scheduleAdvanceBookingNotifications(b){
-  if(!b||!b.bookingNo||!b.pickupDate)return;
-  const start=new Date(String(b.pickupDate)+'T00:00:00');
-  if(isNaN(start.getTime()))return;
-  const store=getAdvanceBookingNotifyStore();
-  const now=Date.now();
-  ADV_BOOKING_NOTIFY_TIMES.forEach(([hour,minute])=>{
-    for(let day=0;day<ADV_BOOKING_NOTIFY_DAYS;day++){
-      const when=new Date(start);when.setDate(when.getDate()+day);when.setHours(hour,minute,0,0);
-      if(when.getTime()<=now)return;
-      const key=advanceBookingNotifyKey(b.bookingNo,day,hour,minute);
-      if(store[key])return;
-      const delay=when.getTime()-now;
-      const MAX_DELAY=2147483647;
-      if(delay>MAX_DELAY)continue;
-      setTimeout(async()=>{
-        const latest=getAdvanceBookingNotifyStore();
-        if(latest[key])return;
-        try{
-          const fresh=await db.ref('advanceBookings/'+b.bookingNo).once('value');
-          const current=fresh.val()||{};
-          if(current.status==='Delivered'||current.status==='Cancelled')return;
-          showAdvanceBookingNotification({...b,...current,bookingNo:b.bookingNo},day);
-          latest[key]=Date.now();
-          setAdvanceBookingNotifyStore(latest);
-        }catch(e){console.warn('Advance booking notification status check:',e)}
-      },delay);
-    }
-  });
-}
-async function scheduleAllAdvanceBookingNotifications(){
-  try{
-    const snap=await db.ref('advanceBookings').limitToLast(100).once('value');
-    snap.forEach(ch=>{
-      const b=ch.val()||{};b.bookingNo=b.bookingNo||ch.key;
-      if(b.status!=='Delivered'&&b.status!=='Cancelled')scheduleAdvanceBookingNotifications(b);
-    });
-  }catch(e){console.warn('Advance booking notification schedule:',e)}
-}
-function initAdvanceBookingNotifications(){
-  if(!('Notification' in window))return;
-  const btn=$('abNotifyBtn');
-  if(btn)btn.textContent=Notification.permission==='granted'?'🔔 Notifications ON':'🔔 Notification ON करें';
-  if(Notification.permission==='granted')scheduleAllAdvanceBookingNotifications();
-}
-
-function populateAdvanceBookingProducts(){const el=$('abProduct');if(!el)return;const old=el.value;el.innerHTML=BILL_PRODUCTS.map(p=>'<option value="'+esc(p[0])+'" data-unit="'+esc(p[1])+'" data-rate="'+Number(p[2])+'">'+esc(p[0])+' ('+esc(p[1])+')</option>').join('');if(old&&BILL_PRODUCTS.some(p=>p[0]===old))el.value=old;}
-function advanceBookingProductChanged(){const el=$('abProduct');const opt=el?.selectedOptions?.[0];if(!opt)return;if(!$('abRate').dataset.manual)$('abRate').value=Number(opt.dataset.rate||0);$('abRate').dataset.unit=opt.dataset.unit||'';calcAdvanceBooking()}
-function calcAdvanceBooking(){const qty=Math.max(0,Number($('abQty')?.value||0)),rate=Math.max(0,Number($('abRate')?.value||0)),total=qty*rate,adv=Math.min(total,Math.max(0,Number($('abAdvance')?.value||0))),pending=Math.max(0,total-adv);if($('abTotal'))$('abTotal').textContent='₹'+total.toFixed(2);if($('abAdvanceShow'))$('abAdvanceShow').textContent='₹'+adv.toFixed(2);if($('abPending'))$('abPending').textContent='₹'+pending.toFixed(2);return {qty,rate,total,advance:adv,pending,unit:$('abRate')?.dataset.unit||$('abProduct')?.selectedOptions?.[0]?.dataset.unit||''}}
-function advanceBookingData(){const c=calcAdvanceBooking(),name=$('abName')?.value.trim()||'',mobile=normalizeMobile($('abMobile')?.value||'');if(!name)throw new Error('ग्राहक का नाम भरें।');if(mobile.length!==10)throw new Error('सही 10 अंकों का मोबाइल नंबर भरें।');if(!$('abBookingDate')?.value||!$('abPickupDate')?.value)throw new Error('बुकिंग और सामान लेने की तारीख भरें।');if(!c.qty||c.qty<=0)throw new Error('मात्रा 0 से अधिक रखें।');return {customerName:name,mobile,bookingDate:$('abBookingDate').value,pickupDate:$('abPickupDate').value,time:$('abTime').value||'08:00',product:$('abProduct').value,unit:c.unit,qty:c.qty,rate:c.rate,total:c.total,advance:c.advance,pending:c.pending,note:$('abNote').value.trim()}}
-async function nextAdvanceBookingNo(){const ref=db.ref('meta/advanceBookingCounter');const tx=await ref.transaction(v=>Number(v||0)+1);const n=Number(tx.snapshot?.val()||tx.snapshot?.value||1);return 'BKG-'+String(n).padStart(4,'0')}
-async function saveAdvanceBooking(){try{if(!auth.currentUser)return advanceBookingMsg('पहले Staff Login करें।',true);const data=advanceBookingData();let no=editingAdvanceBookingNo;if(no){data.updatedAt=firebase.database.ServerValue.TIMESTAMP;data.createdAt=lastAdvanceBooking?.createdAt||firebase.database.ServerValue.TIMESTAMP;data.bookingNo=no;data.status=lastAdvanceBooking?.status||'Pending';}else{no=await nextAdvanceBookingNo();data.bookingNo=no;data.status='Pending';data.createdAt=firebase.database.ServerValue.TIMESTAMP;}data.staff=auth.currentUser.email;await db.ref('advanceBookings/'+no).set(data);lastAdvanceBooking={...data,bookingNo:no,at:Date.now()};editingAdvanceBookingNo=null;$('abSaveBtn').textContent='✅ बुकिंग सेव करें';advanceBookingMsg('Advance Booking '+no+' सेव हो गई ✅');renderAdvanceBookingHistory();resetAdvanceBookingForm(false,true);return true}catch(e){advanceBookingMsg(e.message,true);return false}}
-function resetAdvanceBookingForm(close=true,keepLast=false){editingAdvanceBookingNo=null;if(!keepLast)lastAdvanceBooking=null;['abName','abMobile','abNote'].forEach(id=>{if($(id))$(id).value=''});if($('abQty'))$('abQty').value=1;if($('abAdvance'))$('abAdvance').value=0;if($('abBookingDate'))$('abBookingDate').value=localDateInputValue();if($('abPickupDate'))$('abPickupDate').value=localDateInputValue(new Date(Date.now()+86400000));if($('abTime'))$('abTime').value='08:00';if($('abSaveBtn'))$('abSaveBtn').textContent='✅ बुकिंग सेव करें';if($('abRate'))delete $('abRate').dataset.manual;populateAdvanceBookingProducts();advanceBookingProductChanged();if(close)$('advanceBookingForm')?.classList.add('hidden')}
-function formatBookingDate(v){if(!v)return '-';const [y,m,d]=String(v).split('-');return d&&m&&y?d+'/'+m+'/'+y:v}
-function bookingStatusClass(s){return s==='Delivered'?'booking-delivered':s==='Confirmed'?'booking-confirmed':s==='Cancelled'?'booking-cancelled':'booking-pending'}
-async function renderAdvanceBookingHistory(){const box=$('advanceBookingHistory');if(!box)return;try{if('Notification' in window&&Notification.permission==='granted')scheduleAllAdvanceBookingNotifications();const snap=await db.ref('advanceBookings').limitToLast(100).once('value');const rows=[];snap.forEach(ch=>{const b=ch.val()||{};if(!b.bookingNo)b.bookingNo=ch.key;rows.push(b)});rows.sort((a,b)=>String(b.bookingNo).localeCompare(String(a.bookingNo),undefined,{numeric:true}));box.innerHTML='<div class="advance-booking-head"><div><h3>📋 एडवांस बुकिंग हिस्ट्री</h3><small>Pending / Confirmed / Delivered / Cancelled</small></div><button class="secondary" type="button" onclick="renderAdvanceBookingHistory()">🔄 Refresh</button></div>'+(rows.length?'<table><tr><th>बुकिंग</th><th>तारीख</th><th>ग्राहक / मोबाइल</th><th>प्रोडक्ट</th><th>मात्रा</th><th>कुल</th><th>एडवांस</th><th>बाकी</th><th>स्थिति</th><th>एक्शन</th></tr>'+rows.map(b=>{const no=String(b.bookingNo||'').replace(/'/g,"\\'");return '<tr><td><b>'+esc(b.bookingNo||'')+'</b><br><small>'+formatBookingDate(b.bookingDate)+'</small></td><td>'+formatBookingDate(b.pickupDate)+'<br>'+esc(b.time||'')+'</td><td>'+esc(b.customerName||'')+'<br><small>'+esc(b.mobile||'')+'</small></td><td>'+esc(b.product||'')+'</td><td>'+Number(b.qty||0)+' '+esc(b.unit||'')+'</td><td>₹'+Number(b.total||0).toFixed(2)+'</td><td>₹'+Number(b.advance||0).toFixed(2)+'</td><td>₹'+Number(b.pending||0).toFixed(2)+'</td><td><span class="booking-status '+bookingStatusClass(b.status)+'">'+esc(b.status||'Pending')+'</span></td><td><div class="booking-actions"><button class="secondary" onclick="editAdvanceBooking(\''+no+'\')">✏️</button><button class="secondary" onclick="printSavedAdvanceBooking(\''+no+'\')">🖨️</button><button class="secondary" onclick="whatsappSavedAdvanceBooking(\''+no+'\')">📲</button><button class="gray" onclick="cycleAdvanceBookingStatus(\''+no+'\')">↻</button><button class="gray" onclick="deleteAdvanceBooking(\''+no+'\')">✖</button></div></td></tr>'}).join('')+'</table>':'<div class="muted">अभी कोई Advance Booking नहीं है।</div>');}catch(e){advanceBookingMsg(e.message,true)}}
-async function getAdvanceBooking(no){const s=await db.ref('advanceBookings/'+no).once('value');if(!s.exists())throw new Error('Booking '+no+' नहीं मिली।');const b=s.val()||{};b.bookingNo=no;return b}
-async function editAdvanceBooking(no){try{const b=await getAdvanceBooking(no);editingAdvanceBookingNo=no;lastAdvanceBooking=b;toggleAdvanceBooking(true);$('abName').value=b.customerName||'';$('abMobile').value=b.mobile||'';$('abBookingDate').value=b.bookingDate||'';$('abPickupDate').value=b.pickupDate||'';$('abTime').value=b.time||'08:00';populateAdvanceBookingProducts();$('abProduct').value=b.product||BILL_PRODUCTS[0][0];$('abQty').value=Number(b.qty||0);$('abRate').value=Number(b.rate||0);$('abRate').dataset.manual='1';$('abAdvance').value=Number(b.advance||0);$('abNote').value=b.note||'';calcAdvanceBooking();$('abSaveBtn').textContent='💾 Booking Update करें';advanceBookingMsg('Booking '+no+' edit mode में है।');}catch(e){advanceBookingMsg(e.message,true)}}
-async function cycleAdvanceBookingStatus(no){try{const b=await getAdvanceBooking(no);const seq=['Pending','Confirmed','Delivered','Cancelled'];const next=seq[(seq.indexOf(b.status||'Pending')+1)%seq.length];await db.ref('advanceBookings/'+no+'/status').set(next);await renderAdvanceBookingHistory();advanceBookingMsg(no+' की स्थिति '+next+' कर दी गई ✅')}catch(e){advanceBookingMsg(e.message,true)}}
-async function openSavedBill(no){try{const b=await getBill(no);if(!b)return msg('billMsg','Bill नहीं मिला।',true);lastSavedBill=b;renderBillPreview(b);document.getElementById('lastBillActions')?.style?.setProperty('display','flex');msg('billMsg','Bill '+(b.billNo||no)+' खुल गया ✅')}catch(e){msg('billMsg',e.message,true)}}
-async function deleteAdvanceBooking(no){if(!auth.currentUser)return advanceBookingMsg('पहले Staff Login करें।',true);if(!confirm('Booking '+no+' delete करनी है?'))return;try{await db.ref('advanceBookings/'+no).remove();await renderAdvanceBookingHistory();advanceBookingMsg('Booking '+no+' delete हो गई।')}catch(e){advanceBookingMsg(e.message,true)}}
-function buildAdvanceBookingSlip(b){const status=b.status||'Pending';return '<div class="booking-slip"><h1>श्री राम डेयरी</h1><div class="shop">गाडरवाड़ा, जिला नरसिंहपुर (म.प्र.)<br>मो. 8871983383</div><div class="booking-title">एडवांस बुकिंग स्लिप</div><table><tr><td>बुकिंग नं.</td><td class="r"><b>'+esc(b.bookingNo)+'</b></td></tr><tr><td>बुकिंग तारीख</td><td class="r">'+formatBookingDate(b.bookingDate)+'</td></tr><tr><td>ग्राहक</td><td class="r">'+esc(b.customerName)+'</td></tr><tr><td>मोबाइल</td><td class="r">'+esc(b.mobile)+'</td></tr><tr><td>सामान लेने की तारीख</td><td class="r">'+formatBookingDate(b.pickupDate)+'</td></tr><tr><td>समय</td><td class="r">'+esc(b.time||'')+'</td></tr><tr><td>प्रोडक्ट</td><td class="r">'+esc(b.product)+'</td></tr><tr><td>मात्रा</td><td class="r">'+Number(b.qty||0)+' '+esc(b.unit||'')+'</td></tr><tr><td>दर</td><td class="r">₹'+Number(b.rate||0).toFixed(2)+'</td></tr><tr><td class="total">कुल राशि</td><td class="r total">₹'+Number(b.total||0).toFixed(2)+'</td></tr><tr><td>जमा एडवांस</td><td class="r">₹'+Number(b.advance||0).toFixed(2)+'</td></tr><tr><td>बाकी राशि</td><td class="r">₹'+Number(b.pending||0).toFixed(2)+'</td></tr><tr><td>स्थिति</td><td class="r">'+esc(status)+'</td></tr>'+(b.note?'<tr><td>नोट</td><td class="r">'+esc(b.note)+'</td></tr>':'')+'</table><div class="footer">धन्यवाद!<br>आपका विश्वास ही हमारी पहचान है</div></div>'}
-function printAdvanceBooking(b){if(!b){try{b=advanceBookingData()}catch(e){return advanceBookingMsg(e.message,true)}b={...b,bookingNo:'DRAFT',status:'Pending'}}const holder=document.createElement('div');holder.className='advance-booking-print';holder.innerHTML=buildAdvanceBookingSlip(b);document.body.appendChild(holder);const cleanup=()=>{setTimeout(()=>holder.remove(),500);window.removeEventListener('afterprint',cleanup)};window.addEventListener('afterprint',cleanup);setTimeout(()=>window.print(),150)}
-async function printSavedAdvanceBooking(no){try{printAdvanceBooking(await getAdvanceBooking(no))}catch(e){advanceBookingMsg(e.message,true)}}
-function advanceBookingWhatsAppText(b){return 'नमस्ते '+(b.customerName||'जी')+' जी,\nश्री राम डेयरी में आपकी Advance Booking '+(b.bookingNo||'')+' सफलतापूर्वक दर्ज हो गई है।\n📅 सामान लेने की तारीख: '+formatBookingDate(b.pickupDate)+'\n⏰ समय: '+(b.time||'')+'\n🥛 प्रोडक्ट: '+(b.product||'')+'\n📦 मात्रा: '+Number(b.qty||0)+' '+(b.unit||'')+'\n💰 कुल राशि: ₹'+Number(b.total||0).toFixed(2)+'\n💵 जमा एडवांस: ₹'+Number(b.advance||0).toFixed(2)+'\n💳 बाकी राशि: ₹'+Number(b.pending||0).toFixed(2)+'\n📌 स्थिति: '+(b.status||'Pending')+'\nधन्यवाद!\nश्री राम डेयरी, गाडरवाड़ा'}
-async function whatsappAdvanceBooking(b){try{if(!b){b=lastAdvanceBooking;if(!b){const data=advanceBookingData();b={...data,bookingNo:'DRAFT',status:'Pending'}}}const mobile=normalizeMobile(b.mobile||'');if(mobile.length!==10)return advanceBookingMsg('सही 10 अंकों का मोबाइल नंबर भरें।',true);window.location.href='https://wa.me/91'+mobile+'?text='+encodeURIComponent(advanceBookingWhatsAppText(b));advanceBookingMsg('Customer '+mobile+' की WhatsApp chat खुल रही है। Message तैयार है — सिर्फ Send करें।')}catch(e){advanceBookingMsg(e.message,true)}}
-async function whatsappSavedAdvanceBooking(no){try{await whatsappAdvanceBooking(await getAdvanceBooking(no))}catch(e){advanceBookingMsg(e.message,true)}}
-
+async function loadBillHistory(){try{const snap=await db.ref('bills').limitToLast(100).once('value');let rows=[];snap.forEach(ch=>{const b=ch.val()||{};rows.push(b)});rows.sort((a,b)=>Number(b.at||0)-Number(a.at||0));$('billHistoryList').innerHTML=rows.length?'<table><tr><th>Bill</th><th>Date</th><th>Customer</th><th>Total</th><th>Received</th><th>Pending</th><th>Action</th></tr>'+rows.map(b=>'<tr><td>'+esc(b.billNo||'')+'</td><td>'+(b.at?new Date(b.at).toLocaleString('en-IN'):'')+'</td><td>'+esc(b.customerName||'')+'</td><td>₹'+Number(b.total||0).toFixed(2)+'</td><td>₹'+Number(b.received||0).toFixed(2)+'</td><td>₹'+Number(b.pending||0).toFixed(2)+'</td><td><div class="bill-history-actions"><button class="secondary" onclick="openSavedBill(\''+String(b.billNo||'').replace(/'/g,"\\'")+'\')">Open</button><button class="secondary" onclick="editSavedBill(\''+String(b.billNo||'').replace(/'/g,"\\'")+'\')">Edit</button><button class="gray" onclick="deleteSavedBill(\''+String(b.billNo||'').replace(/'/g,"\\'")+'\')">Delete</button></div></td></tr>').join('')+'</table>':'<span class="muted">अभी कोई bill नहीं है।</span>'}catch(e){msg('billMsg',e.message,true)}}
+async function openSavedBill(no){try{const s=await db.ref('bills/'+no).once('value');if(!s.exists())return msg('billMsg','Bill नहीं मिला।',true);lastBill=s.val();if(!lastBill.at)lastBill.at=Date.now();try{localStorage.setItem('srd_last_bill',JSON.stringify(lastBill))}catch(e){}setBillEditMode(false);showLastBillActions();renderBillPreview();msg('billMsg','Bill '+esc(no)+' खुल गया ✅ अब Print / PDF / WhatsApp कर सकते हैं।');openPage('billingCard','Billing / Sales')}catch(e){msg('billMsg',e.message,true)}}
 function downloadBillHistoryCSV(){db.ref('bills').once('value').then(s=>{let rows=[['Bill No','Date','Customer','Mobile','Subtotal','Discount','Total','Received','Pending','Payment']];s.forEach(c=>{const b=c.val()||{};rows.push([b.billNo,b.at?new Date(b.at).toLocaleString('en-IN'):'',b.customerName,b.customerMobile||'',b.subtotal,b.discount,b.total,b.received,b.pending,b.paymentMode])});const csv='\\ufeff'+rows.map(r=>r.map(csvCell).join(',')).join('\\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='Shree_Ram_Dairy_Billing_History.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}).catch(e=>msg('billMsg',e.message,true))}
 
 async function downloadFullBackup(){
@@ -978,7 +716,6 @@ function showPage(id,title,mode,pushHistory=true){
   }
   if(id==='customerSearchCard' && typeof loadCustomerList==='function') loadCustomerList();
   if(id==='billingCard' && typeof loadBillHistory==='function') loadBillHistory();
-  if(id==='billingCard' && typeof renderAdvanceBookingHistory==='function') renderAdvanceBookingHistory();
   if(id==='staffCard' && typeof loadStaffList==='function') loadStaffList();
   if(id==='financeCard' && typeof loadFinance==='function') loadFinance();
   applyRolePermissions();
@@ -1145,27 +882,5 @@ async function saveLocalSettings(){
 setTimeout(()=>{try{updateHomeStats();if($('expenseDate')&&!$('expenseDate').value)$('expenseDate').value=new Date().toISOString().slice(0,10);if($('staffMonth')&&!$('staffMonth').value)$('staffMonth').value=new Date().toISOString().slice(0,7);loadStaffList();loadStock();loadFinance();}catch(e){}},700);
 
 </script>
-
-<div id="printerModal" class="printer-modal hidden" aria-hidden="true">
-  <div class="printer-sheet">
-    <h3>🖨️ Bluetooth Thermal Printer</h3>
-    <div class="muted">Bill print करने के लिए printer चुनें</div>
-    <div id="printerCurrent" class="printer-current"></div>
-    <div id="printerList" class="printer-list"></div>
-    <div class="printer-note">iPhone Safari में generic Bluetooth thermal printer की direct scanning/connection उपलब्ध नहीं है। अगर browser Web Bluetooth support करता है तो Scan से devices दिखेंगे; iPhone पर printer को Bluetooth Settings/compatible printer app से connect करना होगा।</div>
-    <div class="printer-actions">
-      <button class="secondary" onclick="scanThermalPrinters()">🔍 Bluetooth Scan</button>
-      <button class="secondary" onclick="addManualPrinter()">➕ Printer Add करें</button>
-      <button onclick="connectSelectedPrinter()">🔗 Printer Select करें</button>
-      <button class="gray" onclick="closePrinterModal()">✖️ बंद करें</button>
-    </div>
-    <div id="printerMsg"></div>
-  </div>
-</div>
-
 </body>
 </html>
-
-<script>
-window.addEventListener('load',()=>{setTimeout(()=>{try{initAdvanceBookingNotifications()}catch(e){}},800)});
-</script>
