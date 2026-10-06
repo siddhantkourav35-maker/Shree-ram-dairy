@@ -114,6 +114,10 @@ body.page-mode .page-active .table-scroll td{
 .advance-booking-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 10px}.advance-booking-grid .full{grid-column:1/-1}.advance-booking-total{background:#e6f5ed;border:1px solid #cbe7d9;border-radius:14px;padding:10px;margin:4px 0 8px}.advance-booking-total div{display:flex;justify-content:space-between;padding:3px 0}.advance-booking-total .grand{font-size:18px;font-weight:900;color:#075c45}.advance-booking-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}.advance-booking-actions button{margin:0}.advance-booking-history{margin-top:14px;overflow:auto}.advance-booking-history table{min-width:860px}.booking-status{display:inline-block;padding:5px 9px;border-radius:999px;font-weight:800;font-size:11px}.booking-pending{background:#fff0cf;color:#a66500}.booking-confirmed{background:#dff0ff;color:#0864a7}.booking-delivered{background:#dff7e6;color:#14733d}.booking-cancelled{background:#ffe3e3;color:#b42318}.booking-actions{display:flex;gap:5px;flex-wrap:wrap}.booking-actions button{padding:7px 9px;margin:0;font-size:12px}.advance-booking-print{display:none}
 @media(max-width:600px){.advance-booking-grid{grid-template-columns:1fr}.advance-booking-grid .full{grid-column:auto}.advance-booking-actions{grid-template-columns:1fr 1fr}.advance-booking-actions button:last-child{grid-column:1/-1}}
 @media print{body>*:not(.advance-booking-print){display:none!important}.advance-booking-print{display:block!important;position:static!important}.advance-booking-print .booking-slip{width:76mm;margin:0 auto;padding:5mm;font-family:Arial,sans-serif;color:#111}.booking-slip h1{text-align:center;font-size:18px;margin:0}.booking-slip .shop{text-align:center;font-size:10px;margin:3px 0 8px}.booking-slip .booking-title{text-align:center;border:1px solid #111;padding:4px;font-weight:900;margin-bottom:7px}.booking-slip table{width:100%;border-collapse:collapse;font-size:10px}.booking-slip td{padding:3px 0;border-bottom:1px dashed #999}.booking-slip .r{text-align:right}.booking-slip .total{font-size:13px;font-weight:900}.booking-slip .footer{text-align:center;margin-top:9px;font-size:10px}}
+
+/* ===== THERMAL PRINTER SELECTOR ===== */
+.printer-modal{position:fixed;inset:0;background:rgba(0,0,0,.48);z-index:99999;display:flex;align-items:flex-end;justify-content:center;padding:12px}.printer-modal.hidden{display:none}.printer-sheet{width:min(560px,100%);background:#fff;border-radius:24px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.25)}.printer-sheet h3{margin:0 0 5px}.printer-list{display:grid;gap:8px;margin:12px 0}.printer-item{border:1px solid #d7e5df;border-radius:15px;padding:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#f7fbf9}.printer-item.selected{border-color:#087f5b;background:#e8f7f1}.printer-item b{display:block}.printer-status{font-size:11px;color:#66716d;margin-top:3px}.printer-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.printer-note{font-size:12px;color:#65716d;background:#f2f7f5;border-radius:12px;padding:10px;margin:8px 0}.printer-current{font-size:12px;margin:8px 0;color:#075c43;font-weight:700}
+
 </style><style>
 .bill-history-actions{align-items:center}.bill-history-actions button{white-space:nowrap}.save-wa-btn{background:#087f5b!important;color:#fff!important}
 </style>
@@ -585,7 +589,27 @@ function thermalText(b,width){
 function printThermal(width=58){if(!ensureBillPreview())return msg('billMsg','पहले Bill Save करें।',true);const b=getLastSavedBill();const holder=document.createElement('div');holder.className='print-only';holder.innerHTML='<pre style="margin:0;white-space:pre-wrap;word-break:break-word;font-family:monospace;font-size:11px;line-height:1.28">'+esc(thermalText(b,width===80?80:58))+'</pre>';holder.dataset.paper=width;document.body.appendChild(holder);const cleanup=()=>{setTimeout(()=>holder.remove(),700);window.removeEventListener('afterprint',cleanup)};window.addEventListener('afterprint',cleanup);setTimeout(()=>window.print(),120)}
 function printLastBill(){printThermal(58)}
 function print80mmBill(){printThermal(80)}
-function bluetoothPrintLastBill(){if(!ensureBillPreview())return msg('billMsg','पहले Bill Save करें।',true);msg('billMsg','Bluetooth thermal printer के लिए पहले 58mm/80mm Print चुनें और device का print dialog/app इस्तेमाल करें।');printThermal(58)}
+let srdPrinters=[];let srdSelectedPrinter='';
+function loadSavedPrinters(){try{srdPrinters=JSON.parse(localStorage.getItem('srd_thermal_printers')||'[]');if(!Array.isArray(srdPrinters))srdPrinters=[];srdSelectedPrinter=localStorage.getItem('srd_selected_printer')||''}catch(e){srdPrinters=[];srdSelectedPrinter=''}}
+function savePrinters(){localStorage.setItem('srd_thermal_printers',JSON.stringify(srdPrinters));if(srdSelectedPrinter)localStorage.setItem('srd_selected_printer',srdSelectedPrinter)}
+function renderPrinterList(){loadSavedPrinters();const box=$('printerList'),cur=$('printerCurrent');if(!box)return;cur.innerHTML=srdSelectedPrinter?'✅ Selected: <b>'+esc(srdSelectedPrinter)+'</b>':'कोई printer select नहीं है';box.innerHTML=srdPrinters.length?srdPrinters.map((n,i)=>'<div class="printer-item '+(n===srdSelectedPrinter?'selected':'')+'"><div><b>🖨️ '+esc(n)+'</b><div class="printer-status">Thermal printer</div></div><button class="secondary" onclick="selectPrinter('+i+')">'+(n===srdSelectedPrinter?'Selected':'Select')+'</button></div>').join(''):'<div class="muted">अभी कोई printer saved नहीं है। Bluetooth Scan या Printer Add करें।</div>'}
+function openPrinterModal(){if(!ensureBillPreview())return msg('billMsg','पहले Bill Save करें।',true);loadSavedPrinters();renderPrinterList();$('printerModal').classList.remove('hidden');$('printerModal').setAttribute('aria-hidden','false')}
+function closePrinterModal(){$('printerModal')?.classList.add('hidden');$('printerModal')?.setAttribute('aria-hidden','true')}
+function selectPrinter(i){loadSavedPrinters();if(!srdPrinters[i])return;srdSelectedPrinter=srdPrinters[i];savePrinters();renderPrinterList();msg('printerMsg','Printer select हो गया: '+esc(srdSelectedPrinter)+' ✅')}
+function addManualPrinter(){const n=prompt('Bluetooth printer का नाम डालें:', 'PT-280_CB87');if(!n)return;const name=n.trim();if(!name)return;if(!srdPrinters.includes(name))srdPrinters.push(name);srdSelectedPrinter=name;savePrinters();renderPrinterList();msg('printerMsg',name+' save हो गया ✅')}
+async function scanThermalPrinters(){
+  if(!('bluetooth' in navigator)){msg('printerMsg','इस iPhone/Safari में website से Bluetooth printer scan उपलब्ध नहीं है। पहले iPhone Bluetooth Settings में printer connect करें, फिर यहाँ printer select करें।',true);return}
+  try{
+    msg('printerMsg','Bluetooth devices scan हो रहे हैं…');
+    const device=await navigator.bluetooth.requestDevice({acceptAllDevices:true});
+    const name=device?.name||device?.id||'Bluetooth Printer';
+    if(!srdPrinters.includes(name))srdPrinters.push(name);
+    srdSelectedPrinter=name;savePrinters();renderPrinterList();msg('printerMsg',name+' scan होकर select हो गया ✅');
+  }catch(e){if(e?.name!=='NotFoundError')msg('printerMsg','Bluetooth scan नहीं हो पाया: '+(e.message||e),true)}
+}
+function connectSelectedPrinter(){loadSavedPrinters();if(!srdSelectedPrinter)return msg('printerMsg','पहले printer select करें।',true);closePrinterModal();msg('billMsg','🖨️ '+esc(srdSelectedPrinter)+' selected है। अब thermal print शुरू कर रहे हैं…');printThermal(58)}
+function bluetoothPrintLastBill(){openPrinterModal()}
+loadSavedPrinters();
 async function downloadLastBillPDF(){try{const canvas=await billToCanvas();const {jsPDF}=window.jspdf;const mmW=80,mmH=canvas.height*mmW/canvas.width;const p=new jsPDF({unit:'mm',format:[mmW,mmH]});p.addImage(canvas.toDataURL('image/png',1),'PNG',0,0,mmW,mmH,undefined,'FAST');p.save((getLastSavedBill().billNo||'Bill')+'.pdf');msg('billMsg','Final bill design वाला PDF तैयार हो गया ✅')}catch(e){msg('billMsg','PDF नहीं बन पाया: '+e.message,true)}}
 async function shareBillToWhatsApp(b){
   try{
@@ -1095,6 +1119,24 @@ async function saveLocalSettings(){
 setTimeout(()=>{try{updateHomeStats();if($('expenseDate')&&!$('expenseDate').value)$('expenseDate').value=new Date().toISOString().slice(0,10);if($('staffMonth')&&!$('staffMonth').value)$('staffMonth').value=new Date().toISOString().slice(0,7);loadStaffList();loadStock();loadFinance();}catch(e){}},700);
 
 </script>
+
+<div id="printerModal" class="printer-modal hidden" aria-hidden="true">
+  <div class="printer-sheet">
+    <h3>🖨️ Bluetooth Thermal Printer</h3>
+    <div class="muted">Bill print करने के लिए printer चुनें</div>
+    <div id="printerCurrent" class="printer-current"></div>
+    <div id="printerList" class="printer-list"></div>
+    <div class="printer-note">iPhone Safari में generic Bluetooth thermal printer की direct scanning/connection उपलब्ध नहीं है। अगर browser Web Bluetooth support करता है तो Scan से devices दिखेंगे; iPhone पर printer को Bluetooth Settings/compatible printer app से connect करना होगा।</div>
+    <div class="printer-actions">
+      <button class="secondary" onclick="scanThermalPrinters()">🔍 Bluetooth Scan</button>
+      <button class="secondary" onclick="addManualPrinter()">➕ Printer Add करें</button>
+      <button onclick="connectSelectedPrinter()">🔗 Printer Select करें</button>
+      <button class="gray" onclick="closePrinterModal()">✖️ बंद करें</button>
+    </div>
+    <div id="printerMsg"></div>
+  </div>
+</div>
+
 </body>
 </html>
 
