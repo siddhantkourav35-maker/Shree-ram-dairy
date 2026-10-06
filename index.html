@@ -193,6 +193,7 @@ body.page-mode .page-active .table-scroll td{
    </div>
    <div class="advance-booking-actions">
     <button type="button" onclick="saveAdvanceBooking()" id="abSaveBtn">✅ बुकिंग सेव करें</button>
+    <button type="button" class="secondary" onclick="enableAdvanceBookingNotifications()" id="abNotifyBtn">🔔 Notification ON करें</button>
     <button type="button" class="secondary" onclick="printAdvanceBooking()">🖨️ प्रिंट करें</button>
     <button type="button" class="secondary" onclick="whatsappAdvanceBooking()">📲 WhatsApp पर भेजें</button>
     <button type="button" class="gray" onclick="resetAdvanceBookingForm()">↩️ नई बुकिंग</button>
@@ -653,6 +654,84 @@ let editingAdvanceBookingNo=null,lastAdvanceBooking=null;
 function localDateInputValue(d=new Date()){const z=new Date(d.getTime()-d.getTimezoneOffset()*60000);return z.toISOString().slice(0,10)}
 function advanceBookingMsg(t,bad=false){const el=$('advanceBookingMsg');if(!el)return;el.innerHTML='<div class="notice" style="margin-top:8px;color:'+(bad?'#b42318':'#075c45')+'">'+esc(t)+'</div>'}
 function toggleAdvanceBooking(force){const box=$('advanceBookingForm');if(!box)return;const show=force===undefined?box.classList.contains('hidden'):!!force;box.classList.toggle('hidden',!show);if(show){populateAdvanceBookingProducts();if(!$('abBookingDate').value)$('abBookingDate').value=localDateInputValue();if(!$('abPickupDate').value)$('abPickupDate').value=localDateInputValue(new Date(Date.now()+86400000));if(!$('abTime').value)$('abTime').value='08:00';advanceBookingProductChanged();}}
+/* ===== ADVANCE BOOKING NOTIFICATIONS =====
+   3 notifications per day for 3 days, starting on the pickup date.
+   Times: 09:00, 14:00 and 19:00 local time.
+   Browser notifications require permission. This web app can deliver scheduled
+   notifications while the page/Home Screen app is running; iOS/browser JS alone
+   cannot guarantee background delivery after the app is fully closed without a
+   push-notification server/service. */
+const ADV_BOOKING_NOTIFY_TIMES=[[9,0],[14,0],[19,0]];
+const ADV_BOOKING_NOTIFY_DAYS=3;
+const ADV_BOOKING_NOTIFY_STORE='srdAdvanceBookingNotifiedV1';
+function advanceBookingNotifyKey(no,dayIndex,hour,minute){return String(no)+'|'+dayIndex+'|'+hour+':'+minute}
+function getAdvanceBookingNotifyStore(){try{return JSON.parse(localStorage.getItem(ADV_BOOKING_NOTIFY_STORE)||'{}')}catch(e){return {}}}
+function setAdvanceBookingNotifyStore(x){try{localStorage.setItem(ADV_BOOKING_NOTIFY_STORE,JSON.stringify(x))}catch(e){}}
+async function enableAdvanceBookingNotifications(){
+  try{
+    if(!('Notification' in window))return advanceBookingMsg('इस browser में notifications supported नहीं हैं।',true);
+    const p=await Notification.requestPermission();
+    if(p==='granted'){
+      if($('abNotifyBtn'))$('abNotifyBtn').textContent='🔔 Notifications ON';
+      advanceBookingMsg('Advance Booking notifications ON हो गईं ✅');
+      scheduleAllAdvanceBookingNotifications();
+    }else advanceBookingMsg('Notification permission allow नहीं हुई।',true);
+  }catch(e){advanceBookingMsg(e.message||'Notification permission error',true)}
+}
+function showAdvanceBookingNotification(b,dayIndex){
+  try{
+    if(!('Notification' in window)||Notification.permission!=='granted')return;
+    const title='📦 श्री राम डेयरी — Advance Booking';
+    const body=(b.customerName||'ग्राहक')+' की booking '+(b.bookingNo||'')+' • '+(b.product||'')+' '+Number(b.qty||0)+' '+(b.unit||'')+' • आज सामान लेने का दिन ('+(dayIndex+1)+'/3)';
+    new Notification(title,{body,tag:'srd-'+String(b.bookingNo||'')+'-'+dayIndex,renotify:false});
+  }catch(e){console.warn('Advance booking notification:',e)}
+}
+function scheduleAdvanceBookingNotifications(b){
+  if(!b||!b.bookingNo||!b.pickupDate)return;
+  const start=new Date(String(b.pickupDate)+'T00:00:00');
+  if(isNaN(start.getTime()))return;
+  const store=getAdvanceBookingNotifyStore();
+  const now=Date.now();
+  ADV_BOOKING_NOTIFY_TIMES.forEach(([hour,minute])=>{
+    for(let day=0;day<ADV_BOOKING_NOTIFY_DAYS;day++){
+      const when=new Date(start);when.setDate(when.getDate()+day);when.setHours(hour,minute,0,0);
+      if(when.getTime()<=now)return;
+      const key=advanceBookingNotifyKey(b.bookingNo,day,hour,minute);
+      if(store[key])return;
+      const delay=when.getTime()-now;
+      const MAX_DELAY=2147483647;
+      if(delay>MAX_DELAY)continue;
+      setTimeout(async()=>{
+        const latest=getAdvanceBookingNotifyStore();
+        if(latest[key])return;
+        try{
+          const fresh=await db.ref('advanceBookings/'+b.bookingNo).once('value');
+          const current=fresh.val()||{};
+          if(current.status==='Delivered'||current.status==='Cancelled')return;
+          showAdvanceBookingNotification({...b,...current,bookingNo:b.bookingNo},day);
+          latest[key]=Date.now();
+          setAdvanceBookingNotifyStore(latest);
+        }catch(e){console.warn('Advance booking notification status check:',e)}
+      },delay);
+    }
+  });
+}
+async function scheduleAllAdvanceBookingNotifications(){
+  try{
+    const snap=await db.ref('advanceBookings').limitToLast(100).once('value');
+    snap.forEach(ch=>{
+      const b=ch.val()||{};b.bookingNo=b.bookingNo||ch.key;
+      if(b.status!=='Delivered'&&b.status!=='Cancelled')scheduleAdvanceBookingNotifications(b);
+    });
+  }catch(e){console.warn('Advance booking notification schedule:',e)}
+}
+function initAdvanceBookingNotifications(){
+  if(!('Notification' in window))return;
+  const btn=$('abNotifyBtn');
+  if(btn)btn.textContent=Notification.permission==='granted'?'🔔 Notifications ON':'🔔 Notification ON करें';
+  if(Notification.permission==='granted')scheduleAllAdvanceBookingNotifications();
+}
+
 function populateAdvanceBookingProducts(){const el=$('abProduct');if(!el)return;const old=el.value;el.innerHTML=BILL_PRODUCTS.map(p=>'<option value="'+esc(p[0])+'" data-unit="'+esc(p[1])+'" data-rate="'+Number(p[2])+'">'+esc(p[0])+' ('+esc(p[1])+')</option>').join('');if(old&&BILL_PRODUCTS.some(p=>p[0]===old))el.value=old;}
 function advanceBookingProductChanged(){const el=$('abProduct');const opt=el?.selectedOptions?.[0];if(!opt)return;if(!$('abRate').dataset.manual)$('abRate').value=Number(opt.dataset.rate||0);$('abRate').dataset.unit=opt.dataset.unit||'';calcAdvanceBooking()}
 function calcAdvanceBooking(){const qty=Math.max(0,Number($('abQty')?.value||0)),rate=Math.max(0,Number($('abRate')?.value||0)),total=qty*rate,adv=Math.min(total,Math.max(0,Number($('abAdvance')?.value||0))),pending=Math.max(0,total-adv);if($('abTotal'))$('abTotal').textContent='₹'+total.toFixed(2);if($('abAdvanceShow'))$('abAdvanceShow').textContent='₹'+adv.toFixed(2);if($('abPending'))$('abPending').textContent='₹'+pending.toFixed(2);return {qty,rate,total,advance:adv,pending,unit:$('abRate')?.dataset.unit||$('abProduct')?.selectedOptions?.[0]?.dataset.unit||''}}
@@ -662,10 +741,11 @@ async function saveAdvanceBooking(){try{if(!auth.currentUser)return advanceBooki
 function resetAdvanceBookingForm(close=true,keepLast=false){editingAdvanceBookingNo=null;if(!keepLast)lastAdvanceBooking=null;['abName','abMobile','abNote'].forEach(id=>{if($(id))$(id).value=''});if($('abQty'))$('abQty').value=1;if($('abAdvance'))$('abAdvance').value=0;if($('abBookingDate'))$('abBookingDate').value=localDateInputValue();if($('abPickupDate'))$('abPickupDate').value=localDateInputValue(new Date(Date.now()+86400000));if($('abTime'))$('abTime').value='08:00';if($('abSaveBtn'))$('abSaveBtn').textContent='✅ बुकिंग सेव करें';if($('abRate'))delete $('abRate').dataset.manual;populateAdvanceBookingProducts();advanceBookingProductChanged();if(close)$('advanceBookingForm')?.classList.add('hidden')}
 function formatBookingDate(v){if(!v)return '-';const [y,m,d]=String(v).split('-');return d&&m&&y?d+'/'+m+'/'+y:v}
 function bookingStatusClass(s){return s==='Delivered'?'booking-delivered':s==='Confirmed'?'booking-confirmed':s==='Cancelled'?'booking-cancelled':'booking-pending'}
-async function renderAdvanceBookingHistory(){const box=$('advanceBookingHistory');if(!box)return;try{const snap=await db.ref('advanceBookings').limitToLast(100).once('value');const rows=[];snap.forEach(ch=>{const b=ch.val()||{};if(!b.bookingNo)b.bookingNo=ch.key;rows.push(b)});rows.sort((a,b)=>String(b.bookingNo).localeCompare(String(a.bookingNo),undefined,{numeric:true}));box.innerHTML='<div class="advance-booking-head"><div><h3>📋 एडवांस बुकिंग हिस्ट्री</h3><small>Pending / Confirmed / Delivered / Cancelled</small></div><button class="secondary" type="button" onclick="renderAdvanceBookingHistory()">🔄 Refresh</button></div>'+(rows.length?'<table><tr><th>बुकिंग</th><th>तारीख</th><th>ग्राहक / मोबाइल</th><th>प्रोडक्ट</th><th>मात्रा</th><th>कुल</th><th>एडवांस</th><th>बाकी</th><th>स्थिति</th><th>एक्शन</th></tr>'+rows.map(b=>{const no=String(b.bookingNo||'').replace(/'/g,"\\'");return '<tr><td><b>'+esc(b.bookingNo||'')+'</b><br><small>'+formatBookingDate(b.bookingDate)+'</small></td><td>'+formatBookingDate(b.pickupDate)+'<br>'+esc(b.time||'')+'</td><td>'+esc(b.customerName||'')+'<br><small>'+esc(b.mobile||'')+'</small></td><td>'+esc(b.product||'')+'</td><td>'+Number(b.qty||0)+' '+esc(b.unit||'')+'</td><td>₹'+Number(b.total||0).toFixed(2)+'</td><td>₹'+Number(b.advance||0).toFixed(2)+'</td><td>₹'+Number(b.pending||0).toFixed(2)+'</td><td><span class="booking-status '+bookingStatusClass(b.status)+'">'+esc(b.status||'Pending')+'</span></td><td><div class="booking-actions"><button class="secondary" onclick="editAdvanceBooking(\''+no+'\')">✏️</button><button class="secondary" onclick="printSavedAdvanceBooking(\''+no+'\')">🖨️</button><button class="secondary" onclick="whatsappSavedAdvanceBooking(\''+no+'\')">📲</button><button class="gray" onclick="cycleAdvanceBookingStatus(\''+no+'\')">↻</button><button class="gray" onclick="deleteAdvanceBooking(\''+no+'\')">✖</button></div></td></tr>'}).join('')+'</table>':'<div class="muted">अभी कोई Advance Booking नहीं है।</div>');}catch(e){advanceBookingMsg(e.message,true)}}
+async function renderAdvanceBookingHistory(){const box=$('advanceBookingHistory');if(!box)return;try{if('Notification' in window&&Notification.permission==='granted')scheduleAllAdvanceBookingNotifications();const snap=await db.ref('advanceBookings').limitToLast(100).once('value');const rows=[];snap.forEach(ch=>{const b=ch.val()||{};if(!b.bookingNo)b.bookingNo=ch.key;rows.push(b)});rows.sort((a,b)=>String(b.bookingNo).localeCompare(String(a.bookingNo),undefined,{numeric:true}));box.innerHTML='<div class="advance-booking-head"><div><h3>📋 एडवांस बुकिंग हिस्ट्री</h3><small>Pending / Confirmed / Delivered / Cancelled</small></div><button class="secondary" type="button" onclick="renderAdvanceBookingHistory()">🔄 Refresh</button></div>'+(rows.length?'<table><tr><th>बुकिंग</th><th>तारीख</th><th>ग्राहक / मोबाइल</th><th>प्रोडक्ट</th><th>मात्रा</th><th>कुल</th><th>एडवांस</th><th>बाकी</th><th>स्थिति</th><th>एक्शन</th></tr>'+rows.map(b=>{const no=String(b.bookingNo||'').replace(/'/g,"\\'");return '<tr><td><b>'+esc(b.bookingNo||'')+'</b><br><small>'+formatBookingDate(b.bookingDate)+'</small></td><td>'+formatBookingDate(b.pickupDate)+'<br>'+esc(b.time||'')+'</td><td>'+esc(b.customerName||'')+'<br><small>'+esc(b.mobile||'')+'</small></td><td>'+esc(b.product||'')+'</td><td>'+Number(b.qty||0)+' '+esc(b.unit||'')+'</td><td>₹'+Number(b.total||0).toFixed(2)+'</td><td>₹'+Number(b.advance||0).toFixed(2)+'</td><td>₹'+Number(b.pending||0).toFixed(2)+'</td><td><span class="booking-status '+bookingStatusClass(b.status)+'">'+esc(b.status||'Pending')+'</span></td><td><div class="booking-actions"><button class="secondary" onclick="editAdvanceBooking(\''+no+'\')">✏️</button><button class="secondary" onclick="printSavedAdvanceBooking(\''+no+'\')">🖨️</button><button class="secondary" onclick="whatsappSavedAdvanceBooking(\''+no+'\')">📲</button><button class="gray" onclick="cycleAdvanceBookingStatus(\''+no+'\')">↻</button><button class="gray" onclick="deleteAdvanceBooking(\''+no+'\')">✖</button></div></td></tr>'}).join('')+'</table>':'<div class="muted">अभी कोई Advance Booking नहीं है।</div>');}catch(e){advanceBookingMsg(e.message,true)}}
 async function getAdvanceBooking(no){const s=await db.ref('advanceBookings/'+no).once('value');if(!s.exists())throw new Error('Booking '+no+' नहीं मिली।');const b=s.val()||{};b.bookingNo=no;return b}
 async function editAdvanceBooking(no){try{const b=await getAdvanceBooking(no);editingAdvanceBookingNo=no;lastAdvanceBooking=b;toggleAdvanceBooking(true);$('abName').value=b.customerName||'';$('abMobile').value=b.mobile||'';$('abBookingDate').value=b.bookingDate||'';$('abPickupDate').value=b.pickupDate||'';$('abTime').value=b.time||'08:00';populateAdvanceBookingProducts();$('abProduct').value=b.product||BILL_PRODUCTS[0][0];$('abQty').value=Number(b.qty||0);$('abRate').value=Number(b.rate||0);$('abRate').dataset.manual='1';$('abAdvance').value=Number(b.advance||0);$('abNote').value=b.note||'';calcAdvanceBooking();$('abSaveBtn').textContent='💾 Booking Update करें';advanceBookingMsg('Booking '+no+' edit mode में है।');}catch(e){advanceBookingMsg(e.message,true)}}
 async function cycleAdvanceBookingStatus(no){try{const b=await getAdvanceBooking(no);const seq=['Pending','Confirmed','Delivered','Cancelled'];const next=seq[(seq.indexOf(b.status||'Pending')+1)%seq.length];await db.ref('advanceBookings/'+no+'/status').set(next);await renderAdvanceBookingHistory();advanceBookingMsg(no+' की स्थिति '+next+' कर दी गई ✅')}catch(e){advanceBookingMsg(e.message,true)}}
+async function openSavedBill(no){try{const b=await getBill(no);if(!b)return msg('billMsg','Bill नहीं मिला।',true);lastSavedBill=b;renderBillPreview(b);document.getElementById('lastBillActions')?.style?.setProperty('display','flex');msg('billMsg','Bill '+(b.billNo||no)+' खुल गया ✅')}catch(e){msg('billMsg',e.message,true)}}
 async function deleteAdvanceBooking(no){if(!auth.currentUser)return advanceBookingMsg('पहले Staff Login करें।',true);if(!confirm('Booking '+no+' delete करनी है?'))return;try{await db.ref('advanceBookings/'+no).remove();await renderAdvanceBookingHistory();advanceBookingMsg('Booking '+no+' delete हो गई।')}catch(e){advanceBookingMsg(e.message,true)}}
 function buildAdvanceBookingSlip(b){const status=b.status||'Pending';return '<div class="booking-slip"><h1>श्री राम डेयरी</h1><div class="shop">गाडरवाड़ा, जिला नरसिंहपुर (म.प्र.)<br>मो. 8871983383</div><div class="booking-title">एडवांस बुकिंग स्लिप</div><table><tr><td>बुकिंग नं.</td><td class="r"><b>'+esc(b.bookingNo)+'</b></td></tr><tr><td>बुकिंग तारीख</td><td class="r">'+formatBookingDate(b.bookingDate)+'</td></tr><tr><td>ग्राहक</td><td class="r">'+esc(b.customerName)+'</td></tr><tr><td>मोबाइल</td><td class="r">'+esc(b.mobile)+'</td></tr><tr><td>सामान लेने की तारीख</td><td class="r">'+formatBookingDate(b.pickupDate)+'</td></tr><tr><td>समय</td><td class="r">'+esc(b.time||'')+'</td></tr><tr><td>प्रोडक्ट</td><td class="r">'+esc(b.product)+'</td></tr><tr><td>मात्रा</td><td class="r">'+Number(b.qty||0)+' '+esc(b.unit||'')+'</td></tr><tr><td>दर</td><td class="r">₹'+Number(b.rate||0).toFixed(2)+'</td></tr><tr><td class="total">कुल राशि</td><td class="r total">₹'+Number(b.total||0).toFixed(2)+'</td></tr><tr><td>जमा एडवांस</td><td class="r">₹'+Number(b.advance||0).toFixed(2)+'</td></tr><tr><td>बाकी राशि</td><td class="r">₹'+Number(b.pending||0).toFixed(2)+'</td></tr><tr><td>स्थिति</td><td class="r">'+esc(status)+'</td></tr>'+(b.note?'<tr><td>नोट</td><td class="r">'+esc(b.note)+'</td></tr>':'')+'</table><div class="footer">धन्यवाद!<br>आपका विश्वास ही हमारी पहचान है</div></div>'}
 function printAdvanceBooking(b){if(!b){try{b=advanceBookingData()}catch(e){return advanceBookingMsg(e.message,true)}b={...b,bookingNo:'DRAFT',status:'Pending'}}const holder=document.createElement('div');holder.className='advance-booking-print';holder.innerHTML=buildAdvanceBookingSlip(b);document.body.appendChild(holder);const cleanup=()=>{setTimeout(()=>holder.remove(),500);window.removeEventListener('afterprint',cleanup)};window.addEventListener('afterprint',cleanup);setTimeout(()=>window.print(),150)}
@@ -675,7 +755,7 @@ async function whatsappAdvanceBooking(b){try{if(!b){b=lastAdvanceBooking;if(!b){
 async function whatsappSavedAdvanceBooking(no){try{await whatsappAdvanceBooking(await getAdvanceBooking(no))}catch(e){advanceBookingMsg(e.message,true)}}
 
 function downloadBillHistoryCSV(){db.ref('bills').once('value').then(s=>{let rows=[['Bill No','Date','Customer','Mobile','Subtotal','Discount','Total','Received','Pending','Payment']];s.forEach(c=>{const b=c.val()||{};rows.push([b.billNo,b.at?new Date(b.at).toLocaleString('en-IN'):'',b.customerName,b.customerMobile||'',b.subtotal,b.discount,b.total,b.received,b.pending,b.paymentMode])});const csv='\\ufeff'+rows.map(r=>r.map(csvCell).join(',')).join('\\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='Shree_Ram_Dairy_Billing_History.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}).catch(e=>msg('billMsg',e.message,true))}
-function downloadStaffPDF(){if(!window.jspdf)return msg('staffMsg','PDF tool load नहीं हुआ।',true);const name=$('staffName')?.value.trim(),month=$('staffMonth')?.value;if(!name||!month)return msg('staffMsg','पहले Staff name और month भरें।',true);const id=(name+'_'+month).toLowerCase().replace(/[^a-z0-9]+/g,'_');db.ref('staffRecords/'+$('staffSelect').value+'/'+month).once('value').then(s=>{const x=s.val()||{},abs=Object.keys(x.absent||{}).sort(),adv=Object.values(x.advances||{}),salary=Number(x.meta?.salary||0),days=Number(x.meta?.days||30),totalAdv=adv.reduce((a,v)=>a+Number(v.amount||0),0),ded=days?salary/days*abs.length:0,rem=Math.max(0,salary-ded-totalAdv),{jsPDF}=window.jspdf,p=new jsPDF({unit:'mm',format:'a4'});let y=18;p.setFontSize(16);p.text('SHREE RAM DAIRY - STAFF MONTHLY REPORT',105,y,{align:'center'});y+=10;p.setFontSize(10);[['Staff Name',name],['Month',month],['Salary','₹'+Math.round(salary)],['Days in Month',days],['Total Absent',abs.length],['Absent Deduction','₹'+Math.round(ded)],['Total Advance','₹'+Math.round(totalAdv)],['Remaining Salary','₹'+Math.round(rem)]].forEach(a=>{p.text(a[0]+':',15,y);p.text(String(a[1]),65,y);y+=6});y+=4;p.setFontSize(11);p.text('Absent Dates',15,y);y+=6;p.setFontSize(9);p.text(abs.length?abs.join(', '):'None',15,y,{maxWidth:175});y+=12;p.setFontSize(11);p.text('Advance Entries',15,y);y+=6;p.setFontSize(9);adv.forEach(a=>{p.text((a.date||'')+'   ₹'+Math.round(a.amount||0),15,y);y+=5});p.save('Shree_Ram_Dairy_Staff_'+month+'.pdf')}).catch(e=>msg('staffMsg',e.message,true))}
+
 async function downloadFullBackup(){
   try{
     if(!isAdminUser())return msg('backupMsg','सिर्फ Owner/Admin backup ले सकता है।',true);
@@ -1013,3 +1093,7 @@ setTimeout(()=>{try{updateHomeStats();if($('expenseDate')&&!$('expenseDate').val
 </script>
 </body>
 </html>
+
+<script>
+window.addEventListener('load',()=>{setTimeout(()=>{try{initAdvanceBookingNotifications()}catch(e){}},800)});
+</script>
