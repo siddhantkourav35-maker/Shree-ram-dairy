@@ -590,24 +590,50 @@ function printThermal(width=58){if(!ensureBillPreview())return msg('billMsg','�
 function printLastBill(){printThermal(58)}
 function print80mmBill(){printThermal(80)}
 let srdPrinters=[];let srdSelectedPrinter='';
+let srdBtDevices={};let srdBtDevice=null;let srdBtCharacteristic=null;
 function loadSavedPrinters(){try{srdPrinters=JSON.parse(localStorage.getItem('srd_thermal_printers')||'[]');if(!Array.isArray(srdPrinters))srdPrinters=[];srdSelectedPrinter=localStorage.getItem('srd_selected_printer')||''}catch(e){srdPrinters=[];srdSelectedPrinter=''}}
 function savePrinters(){localStorage.setItem('srd_thermal_printers',JSON.stringify(srdPrinters));if(srdSelectedPrinter)localStorage.setItem('srd_selected_printer',srdSelectedPrinter)}
-function renderPrinterList(){loadSavedPrinters();const box=$('printerList'),cur=$('printerCurrent');if(!box)return;cur.innerHTML=srdSelectedPrinter?'✅ Selected: <b>'+esc(srdSelectedPrinter)+'</b>':'कोई printer select नहीं है';box.innerHTML=srdPrinters.length?srdPrinters.map((n,i)=>'<div class="printer-item '+(n===srdSelectedPrinter?'selected':'')+'"><div><b>🖨️ '+esc(n)+'</b><div class="printer-status">Thermal printer</div></div><button class="secondary" onclick="selectPrinter('+i+')">'+(n===srdSelectedPrinter?'Selected':'Select')+'</button></div>').join(''):'<div class="muted">अभी कोई printer saved नहीं है। Bluetooth Scan या Printer Add करें।</div>'}
+function renderPrinterList(){loadSavedPrinters();const box=$('printerList'),cur=$('printerCurrent');if(!box)return;const connected=!!(srdBtDevice?.gatt?.connected);cur.innerHTML=srdSelectedPrinter?'✅ Selected: <b>'+esc(srdSelectedPrinter)+'</b>'+(connected?' <span style="color:#07875f">• Connected</span>':''):'कोई printer select नहीं है';box.innerHTML=srdPrinters.length?srdPrinters.map((n,i)=>'<div class="printer-item '+(n===srdSelectedPrinter?'selected':'')+'"><div><b>🖨️ '+esc(n)+'</b><div class="printer-status">'+(n===srdSelectedPrinter&&connected?'Bluetooth Connected':'Thermal printer')+'</div></div><button class="secondary" onclick="selectPrinter('+i+')">'+(n===srdSelectedPrinter?'Selected':'Select')+'</button></div>').join(''):'<div class="muted">अभी कोई printer saved नहीं है। Bluetooth Scan करें।</div>'}
 function openPrinterModal(){if(!ensureBillPreview())return msg('billMsg','पहले Bill Save करें।',true);loadSavedPrinters();renderPrinterList();$('printerModal').classList.remove('hidden');$('printerModal').setAttribute('aria-hidden','false')}
 function closePrinterModal(){$('printerModal')?.classList.add('hidden');$('printerModal')?.setAttribute('aria-hidden','true')}
-function selectPrinter(i){loadSavedPrinters();if(!srdPrinters[i])return;srdSelectedPrinter=srdPrinters[i];savePrinters();renderPrinterList();msg('printerMsg','Printer select हो गया: '+esc(srdSelectedPrinter)+' ✅')}
-function addManualPrinter(){const n=prompt('Bluetooth printer का नाम डालें:', 'PT-280_CB87');if(!n)return;const name=n.trim();if(!name)return;if(!srdPrinters.includes(name))srdPrinters.push(name);srdSelectedPrinter=name;savePrinters();renderPrinterList();msg('printerMsg',name+' save हो गया ✅')}
+function selectPrinter(i){loadSavedPrinters();if(!srdPrinters[i])return;srdSelectedPrinter=srdPrinters[i];savePrinters();const d=Object.values(srdBtDevices).find(x=>x?.name===srdSelectedPrinter);srdBtDevice=d||null;srdBtCharacteristic=null;renderPrinterList();msg('printerMsg',d?'Printer select हो गया: '+esc(srdSelectedPrinter)+' ✅':'Printer '+esc(srdSelectedPrinter)+' select हो गया। अब Bluetooth Scan करके इसी printer को connect करें।')}
+function addManualPrinter(){const n=prompt('Bluetooth printer का नाम डालें:','PT-280_CB87');if(!n)return;const name=n.trim();if(!name)return;if(!srdPrinters.includes(name))srdPrinters.push(name);srdSelectedPrinter=name;savePrinters();renderPrinterList();msg('printerMsg',name+' save हो गया। अब Bluetooth Scan करके actual connection करें।')}
 async function scanThermalPrinters(){
-  if(!('bluetooth' in navigator)){msg('printerMsg','इस iPhone/Safari में website से Bluetooth printer scan उपलब्ध नहीं है। पहले iPhone Bluetooth Settings में printer connect करें, फिर यहाँ printer select करें।',true);return}
+  if(!('bluetooth' in navigator))return msg('printerMsg','इस browser में Web Bluetooth उपलब्ध नहीं है। Android Chrome में कोशिश करें।',true);
   try{
-    msg('printerMsg','Bluetooth devices scan हो रहे हैं…');
-    const device=await navigator.bluetooth.requestDevice({acceptAllDevices:true});
+    msg('printerMsg','Bluetooth printer scan हो रहा है…');
+    const device=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:['0000ff00-0000-1000-8000-00805f9b34fb','000018f0-0000-1000-8000-00805f9b34fb','generic_access','generic_attribute']});
     const name=device?.name||device?.id||'Bluetooth Printer';
+    srdBtDevices[device.id]=device;srdBtDevice=device;
     if(!srdPrinters.includes(name))srdPrinters.push(name);
-    srdSelectedPrinter=name;savePrinters();renderPrinterList();msg('printerMsg',name+' scan होकर select हो गया ✅');
+    srdSelectedPrinter=name;savePrinters();
+    device.addEventListener?.('gattserverdisconnected',()=>{if(srdBtDevice?.id===device.id){srdBtCharacteristic=null;renderPrinterList();}});
+    renderPrinterList();msg('printerMsg',name+' scan होकर select हो गया ✅ अब Printer Select करें।');
   }catch(e){if(e?.name!=='NotFoundError')msg('printerMsg','Bluetooth scan नहीं हो पाया: '+(e.message||e),true)}
 }
-function connectSelectedPrinter(){loadSavedPrinters();if(!srdSelectedPrinter)return msg('printerMsg','पहले printer select करें।',true);closePrinterModal();msg('billMsg','🖨️ '+esc(srdSelectedPrinter)+' selected है। अब thermal print शुरू कर रहे हैं…');printThermal(58)}
+async function connectBluetoothPrinter(device){
+  if(!device)throw new Error('पहले Bluetooth Scan करके printer चुनें।');
+  if(!device.gatt)throw new Error('इस device में Web Bluetooth/GATT support नहीं मिला।');
+  if(!device.gatt.connected)await device.gatt.connect();
+  let services=[];
+  for(const uuid of ['0000ff00-0000-1000-8000-00805f9b34fb','000018f0-0000-1000-8000-00805f9b34fb']){try{const svc=await device.gatt.getPrimaryService(uuid);if(svc)services.push(svc)}catch(e){}}
+  if(!services.length){try{services=await device.gatt.getPrimaryServices()}catch(e){services=[]}}
+  let writable=null;
+  for(const service of services){let chars=[];try{chars=await service.getCharacteristics()}catch(e){continue}for(const ch of chars){const p=ch.properties||{};if(p.writeWithoutResponse||p.write){writable=ch;break}}if(writable)break}
+  if(!writable)throw new Error('Printer का writable Bluetooth channel नहीं मिला। इस PT-280 variant को Android printer app/SDK की जरूरत हो सकती है।');
+  srdBtCharacteristic=writable;return writable;
+}
+function escPosBytes(text){const safe=String(text||'').replace(/₹/g,'Rs ').replace(/[^\x09\x0A\x0D\x20-\x7E]/g,'');return new Uint8Array(unescape(encodeURIComponent(safe)).split('').map(c=>c.charCodeAt(0)))}
+async function writeEscPos(data){if(!srdBtCharacteristic)throw new Error('Printer Bluetooth channel connected नहीं है।');const max=20;for(let i=0;i<data.length;i+=max){const chunk=data.slice(i,Math.min(i+max,data.length));if(srdBtCharacteristic.properties?.writeWithoutResponse&&srdBtCharacteristic.writeValueWithoutResponse)await srdBtCharacteristic.writeValueWithoutResponse(chunk);else await srdBtCharacteristic.writeValue(chunk);await new Promise(r=>setTimeout(r,10))}}
+async function directBluetoothPrint(b){
+  const device=Object.values(srdBtDevices).find(d=>d?.name===srdSelectedPrinter)||null;srdBtDevice=device;if(!device)throw new Error('इस page session में '+(srdSelectedPrinter||'printer')+' उपलब्ध नहीं है। पहले Bluetooth Scan करें।');
+  await connectBluetoothPrinter(device);const text=thermalText(b,58).replace(/₹/g,'Rs ');await writeEscPos(new Uint8Array([0x1B,0x40]));await writeEscPos(escPosBytes(text+'\n\n\n'));await writeEscPos(new Uint8Array([0x1D,0x56,0x00]));srdSelectedPrinter=device.name||srdSelectedPrinter;savePrinters();renderPrinterList();return true;
+}
+async function connectSelectedPrinter(){
+  loadSavedPrinters();if(!srdSelectedPrinter)return msg('printerMsg','पहले printer select करें।',true);const dev=Object.values(srdBtDevices).find(d=>d?.name===srdSelectedPrinter)||null;srdBtDevice=dev;srdBtCharacteristic=null;
+  if(!dev)return msg('printerMsg','यह printer saved है लेकिन इस page session में Bluetooth device उपलब्ध नहीं है। 🔍 Bluetooth Scan दबाकर फिर '+esc(srdSelectedPrinter)+' चुनें।',true);
+  try{msg('printerMsg','🔗 '+esc(srdSelectedPrinter)+' से connect हो रहा है…');await connectBluetoothPrinter(dev);renderPrinterList();msg('printerMsg','✅ Printer connected. अब Bill print हो रहा है…');await directBluetoothPrint(getLastSavedBill());closePrinterModal();msg('billMsg','✅ '+esc(srdSelectedPrinter)+' पर Bill direct Bluetooth से print हो गया।')}catch(e){msg('printerMsg','Direct Bluetooth print नहीं हो पाया: '+(e.message||e),true)}
+}
 function bluetoothPrintLastBill(){openPrinterModal()}
 loadSavedPrinters();
 async function downloadLastBillPDF(){try{const canvas=await billToCanvas();const {jsPDF}=window.jspdf;const mmW=80,mmH=canvas.height*mmW/canvas.width;const p=new jsPDF({unit:'mm',format:[mmW,mmH]});p.addImage(canvas.toDataURL('image/png',1),'PNG',0,0,mmW,mmH,undefined,'FAST');p.save((getLastSavedBill().billNo||'Bill')+'.pdf');msg('billMsg','Final bill design वाला PDF तैयार हो गया ✅')}catch(e){msg('billMsg','PDF नहीं बन पाया: '+e.message,true)}}
