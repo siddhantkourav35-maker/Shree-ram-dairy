@@ -860,7 +860,48 @@ function bookingStatusClass(s){return s==='Delivered'?'booking-delivered':s==='C
 async function renderAdvanceBookingHistory(){const box=$('advanceBookingHistory');if(!box)return;try{if('Notification' in window&&Notification.permission==='granted')scheduleAllAdvanceBookingNotifications();const snap=await db.ref('advanceBookings').limitToLast(100).once('value');const rows=[];snap.forEach(ch=>{const b=ch.val()||{};if(!b.bookingNo)b.bookingNo=ch.key;rows.push(b)});rows.sort((a,b)=>String(b.bookingNo).localeCompare(String(a.bookingNo),undefined,{numeric:true}));box.innerHTML='<div class="advance-booking-head"><div><h3>📋 एडवांस बुकिंग हिस्ट्री</h3><small>Pending / Confirmed / Delivered / Cancelled</small></div><button class="secondary" type="button" onclick="renderAdvanceBookingHistory()">🔄 Refresh</button></div>'+(rows.length?'<table><tr><th>बुकिंग</th><th>तारीख</th><th>ग्राहक / मोबाइल</th><th>प्रोडक्ट</th><th>मात्रा</th><th>कुल</th><th>एडवांस</th><th>बाकी</th><th>स्थिति</th><th>एक्शन</th></tr>'+rows.map(b=>{const no=String(b.bookingNo||'').replace(/'/g,"\\'");return '<tr><td><b>'+esc(b.bookingNo||'')+'</b><br><small>'+formatBookingDate(b.bookingDate)+'</small></td><td>'+formatBookingDate(b.pickupDate)+'<br>'+esc(b.time||'')+'</td><td>'+esc(b.customerName||'')+'<br><small>'+esc(b.mobile||'')+'</small></td><td>'+((Array.isArray(b.items)&&b.items.length)?b.items.map(x=>esc(x.product||'')+' × '+Number(x.qty||0)+' '+esc(x.unit||'')).join('<br>'):esc(b.product||''))+'</td><td>'+((Array.isArray(b.items)&&b.items.length)?b.items.reduce((a,x)=>a+Number(x.qty||0),0):Number(b.qty||0))+'</td><td>₹'+Number(b.total||0).toFixed(2)+'</td><td>₹'+Number(b.advance||0).toFixed(2)+'</td><td>₹'+Number(b.pending||0).toFixed(2)+'</td><td><span class="booking-status '+bookingStatusClass(b.status)+'">'+esc(b.status||'Pending')+'</span></td><td><div class="booking-actions"><button class="secondary" onclick="editAdvanceBooking(\''+no+'\')">✏️</button><button class="secondary" onclick="printSavedAdvanceBooking(\''+no+'\')">🖨️</button><button class="secondary" onclick="whatsappSavedAdvanceBooking(\''+no+'\')">📲</button><button class="gray" onclick="cycleAdvanceBookingStatus(\''+no+'\')">↻</button><button class="gray" onclick="deleteAdvanceBooking(\''+no+'\')">✖</button></div></td></tr>'}).join('')+'</table>':'<div class="muted">अभी कोई Advance Booking नहीं है।</div>');}catch(e){advanceBookingMsg(e.message,true)}}
 async function getAdvanceBooking(no){const s=await db.ref('advanceBookings/'+no).once('value');if(!s.exists())throw new Error('Booking '+no+' नहीं मिली।');const b=s.val()||{};b.bookingNo=no;return b}
 async function editAdvanceBooking(no){try{const b=await getAdvanceBooking(no);editingAdvanceBookingNo=no;lastAdvanceBooking=b;toggleAdvanceBooking(true);$('abName').value=b.customerName||'';$('abMobile').value=b.mobile||'';$('abBookingDate').value=b.bookingDate||'';$('abPickupDate').value=b.pickupDate||'';$('abTime').value=b.time||'08:00';const items=Array.isArray(b.items)&&b.items.length?b.items:[{product:b.product,unit:b.unit,qty:b.qty,rate:b.rate}];populateAdvanceBookingProducts(items);$('abAdvance').value=Number(b.advance||0);$('abNote').value=b.note||'';calcAdvanceBooking();$('abSaveBtn').textContent='💾 Booking Update करें';advanceBookingMsg('Booking '+no+' edit mode में है।');}catch(e){advanceBookingMsg(e.message,true)}}
-async function cycleAdvanceBookingStatus(no){try{const b=await getAdvanceBooking(no);const seq=['Pending','Confirmed','Delivered','Cancelled'];const next=seq[(seq.indexOf(b.status||'Pending')+1)%seq.length];await db.ref('advanceBookings/'+no+'/status').set(next);await renderAdvanceBookingHistory();advanceBookingMsg(no+' की स्थिति '+next+' कर दी गई ✅')}catch(e){advanceBookingMsg(e.message,true)}}
+async function createBillFromDeliveredAdvanceBooking(b){
+  if(!auth.currentUser)throw new Error('पहले Staff Login करें।');
+  const bookingNo=String(b.bookingNo||'');
+  if(!bookingNo)throw new Error('Advance Booking number नहीं मिला।');
+  const existing=await db.ref('bills').orderByChild('advanceBookingNo').equalTo(bookingNo).once('value');
+  let existingBill=null;existing.forEach(ch=>{if(!existingBill)existingBill=ch.val()||{};});
+  if(existingBill?.billNo)return {bill:existingBill,created:false};
+  const items=Array.isArray(b.items)&&b.items.length?b.items:[{product:b.product,unit:b.unit,qty:b.qty,rate:b.rate}];
+  const total=Number(b.total||items.reduce((a,x)=>a+Number(x.qty||0)*Number(x.rate||0),0));
+  const advance=Math.min(total,Math.max(0,Number(b.advance||0)));
+  const pending=Math.max(0,total-advance);
+  const num=await billNo();
+  const bill={
+    billNo:num,
+    customerRef:b.mobile||'',
+    customerMobile:normalizeMobile(b.mobile||''),
+    customerName:b.customerName||'Walk-in Customer',
+    items:items.map(x=>({...x,total:Number(x.total??(Number(x.qty||0)*Number(x.rate||0)))})),
+    subtotal:total,
+    discount:0,
+    total,
+    received:advance,
+    pending,
+    paymentMode:'Advance Booking',
+    at:firebase.database.ServerValue.TIMESTAMP,
+    staff:auth.currentUser.email,
+    advanceBookingNo:bookingNo,
+    source:'advanceBooking',
+    bookingDate:b.bookingDate||'',
+    pickupDate:b.pickupDate||'',
+    note:b.note||''
+  };
+  await db.ref('bills/'+num).set(bill);
+  try{
+    const q=b.mobile||'';let snap=null;
+    if(q){snap=await db.ref('customers').once('value');let found=null;snap.forEach(ch=>{if(!found&&String(ch.val()?.mobile||'')===String(q))found=ch;});
+      if(found)await db.ref('customers/'+found.key+'/logs').push({type:'bill',billNo:num,amountChange:advance,source:'advanceBooking',advanceBookingNo:bookingNo,by:auth.currentUser.email,at:firebase.database.ServerValue.TIMESTAMP});
+    }
+  }catch(e){console.warn('Advance booking customer log:',e)}
+  return {bill,created:true};
+}
+async function cycleAdvanceBookingStatus(no){try{const b=await getAdvanceBooking(no);const seq=['Pending','Confirmed','Delivered','Cancelled'];const next=seq[(seq.indexOf(b.status||'Pending')+1)%seq.length];await db.ref('advanceBookings/'+no+'/status').set(next);let billResult=null;if(next==='Delivered'){billResult=await createBillFromDeliveredAdvanceBooking({...b,status:next});await db.ref('advanceBookings/'+no).update({mainBillNo:billResult.bill.billNo,billCreatedAt:firebase.database.ServerValue.TIMESTAMP});}await renderAdvanceBookingHistory();if(next==='Delivered'){advanceBookingMsg(no+' की स्थिति Delivered कर दी गई ✅ और Main Billing में Bill '+billResult.bill.billNo+' '+(billResult.created?'automatic save हो गया':'पहले से saved था')+'।')}else{advanceBookingMsg(no+' की स्थिति '+next+' कर दी गई ✅')}}catch(e){advanceBookingMsg(e.message,true)}}
 async function openSavedBill(no){try{const b=await getBill(no);if(!b)return msg('billMsg','Bill नहीं मिला।',true);lastSavedBill=b;renderBillPreview(b);document.getElementById('lastBillActions')?.style?.setProperty('display','flex');msg('billMsg','Bill '+(b.billNo||no)+' खुल गया ✅')}catch(e){msg('billMsg',e.message,true)}}
 async function deleteAdvanceBooking(no){if(!auth.currentUser)return advanceBookingMsg('पहले Staff Login करें।',true);if(!confirm('Booking '+no+' delete करनी है?'))return;try{await db.ref('advanceBookings/'+no).remove();await renderAdvanceBookingHistory();advanceBookingMsg('Booking '+no+' delete हो गई।')}catch(e){advanceBookingMsg(e.message,true)}}
 function buildAdvanceBookingSlip(b){const status=b.status||'Pending';return '<div class="booking-slip"><h1>श्री राम डेयरी</h1><div class="shop">गाडरवाड़ा, जिला नरसिंहपुर (म.प्र.)<br>मो. 8871983383</div><div class="booking-title">एडवांस बुकिंग स्लिप</div><table><tr><td>बुकिंग नं.</td><td class="r"><b>'+esc(b.bookingNo)+'</b></td></tr><tr><td>बुकिंग तारीख</td><td class="r">'+formatBookingDate(b.bookingDate)+'</td></tr><tr><td>ग्राहक</td><td class="r">'+esc(b.customerName)+'</td></tr><tr><td>मोबाइल</td><td class="r">'+esc(b.mobile)+'</td></tr><tr><td>सामान लेने की तारीख</td><td class="r">'+formatBookingDate(b.pickupDate)+'</td></tr><tr><td>समय</td><td class="r">'+esc(b.time||'')+'</td></tr><tr><td colspan="2"><b>प्रोडक्ट्स</b></td></tr>'+((Array.isArray(b.items)&&b.items.length)?b.items.map(x=>'<tr><td>'+esc(x.product||'')+'<br><small>'+Number(x.qty||0)+' '+esc(x.unit||'')+' × ₹'+Number(x.rate||0).toFixed(2)+'</small></td><td class="r">₹'+Number(x.total||Number(x.qty||0)*Number(x.rate||0)).toFixed(2)+'</td></tr>').join(''):'<tr><td>'+esc(b.product||'')+'</td><td class="r">'+Number(b.qty||0)+' '+esc(b.unit||'')+' × ₹'+Number(b.rate||0).toFixed(2)+'</td></tr>')+'<tr><td class="total">कुल राशि</td><td class="r total">₹'+Number(b.total||0).toFixed(2)+'</td></tr><tr><td>जमा एडवांस</td><td class="r">₹'+Number(b.advance||0).toFixed(2)+'</td></tr><tr><td>बाकी राशि</td><td class="r">₹'+Number(b.pending||0).toFixed(2)+'</td></tr><tr><td>स्थिति</td><td class="r">'+esc(status)+'</td></tr>'+(b.note?'<tr><td>नोट</td><td class="r">'+esc(b.note)+'</td></tr>':'')+'</table><div class="footer">धन्यवाद!<br>आपका विश्वास ही हमारी पहचान है</div></div>'}
