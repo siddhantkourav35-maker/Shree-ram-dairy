@@ -660,7 +660,11 @@ async function scanThermalPrinters(){
   if(!('bluetooth' in navigator))return msg('printerMsg','इस browser में Web Bluetooth उपलब्ध नहीं है। Android Chrome में कोशिश करें।',true);
   try{
     msg('printerMsg','Bluetooth printer scan हो रहा है…');
-    const device=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:['0000ff00-0000-1000-8000-00805f9b34fb','000018f0-0000-1000-8000-00805f9b34fb','generic_access','generic_attribute']});
+    const device=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[
+      '0000ff00-0000-1000-8000-00805f9b34fb','000018f0-0000-1000-8000-00805f9b34fb',
+      '0000ffe0-0000-1000-8000-00805f9b34fb','0000ffe5-0000-1000-8000-00805f9b34fb',
+      '0000ae30-0000-1000-8000-00805f9b34fb','49535343-fe7d-4ae5-8fa9-9fafd205e455',
+      '6e400001-b5a3-f393-e0a9-e50e24dcca9e','generic_access','generic_attribute']});
     const name=device?.name||device?.id||'Bluetooth Printer';
     srdBtDevices[device.id]=device;srdBtDevice=device;
     if(!srdPrinters.includes(name))srdPrinters.push(name);
@@ -671,14 +675,15 @@ async function scanThermalPrinters(){
 }
 async function connectBluetoothPrinter(device){
   if(!device)throw new Error('पहले Bluetooth Scan करके printer चुनें।');
-  if(!device.gatt)throw new Error('इस device में Web Bluetooth/GATT support नहीं मिला।');
+  if(!device.gatt)throw new Error('इस device में Web Bluetooth/GATT support नहीं मिला। यह Classic Bluetooth (SPP) printer भी हो सकता है, जिसे browser direct print नहीं कर सकता।');
   if(!device.gatt.connected)await device.gatt.connect();
   let services=[];
-  for(const uuid of ['0000ff00-0000-1000-8000-00805f9b34fb','000018f0-0000-1000-8000-00805f9b34fb']){try{const svc=await device.gatt.getPrimaryService(uuid);if(svc)services.push(svc)}catch(e){}}
-  if(!services.length){try{services=await device.gatt.getPrimaryServices()}catch(e){services=[]}}
-  let writable=null;
-  for(const service of services){let chars=[];try{chars=await service.getCharacteristics()}catch(e){continue}for(const ch of chars){const p=ch.properties||{};if(p.writeWithoutResponse||p.write){writable=ch;break}}if(writable)break}
-  if(!writable)throw new Error('Printer का writable Bluetooth channel नहीं मिला। इस PT-280 variant को Android printer app/SDK की जरूरत हो सकती है।');
+  const preferred=['0000ff00-0000-1000-8000-00805f9b34fb','000018f0-0000-1000-8000-00805f9b34fb','0000ffe0-0000-1000-8000-00805f9b34fb','0000ffe5-0000-1000-8000-00805f9b34fb','0000ae30-0000-1000-8000-00805f9b34fb','49535343-fe7d-4ae5-8fa9-9fafd205e455','6e400001-b5a3-f393-e0a9-e50e24dcca9e'];
+  for(const uuid of preferred){try{const svc=await device.gatt.getPrimaryService(uuid);if(svc&&!services.some(x=>x.uuid===svc.uuid))services.push(svc)}catch(e){}}
+  try{const all=await device.gatt.getPrimaryServices();for(const svc of all){if(!services.some(x=>x.uuid===svc.uuid))services.push(svc)}}catch(e){}
+  let writable=null;let diagnostics=[];
+  for(const service of services){let chars=[];try{chars=await service.getCharacteristics()}catch(e){diagnostics.push(service.uuid+' (characteristics unavailable)');continue}for(const ch of chars){const p=ch.properties||{};diagnostics.push(service.uuid+' / '+ch.uuid+' ['+Object.keys(p).filter(k=>p[k]).join(',')+']');if(!writable&&(p.writeWithoutResponse||p.write))writable=ch}}
+  if(!writable){const d=diagnostics.slice(0,12).join(' | ');throw new Error('Writable BLE channel नहीं मिला। '+(d?'Detected: '+d+'। ':'')+'अगर PT-280 Classic Bluetooth/SPP है तो Android printer app/SDK जरूरी होगा; Web Bluetooth से direct print संभव नहीं होगा।')}
   srdBtCharacteristic=writable;return writable;
 }
 function escPosBytes(text){const safe=String(text||'').replace(/₹/g,'Rs ').replace(/[^\x09\x0A\x0D\x20-\x7E]/g,'');return new Uint8Array(unescape(encodeURIComponent(safe)).split('').map(c=>c.charCodeAt(0)))}
@@ -749,6 +754,7 @@ async function saveBillAndWhatsApp(){
 }
 function startEditBill(b){if(!b)return;editingBillNo=b.billNo;lastBill={...b,at:b.at||Date.now()};$('billCustomer').value=b.customerRef||b.customerMobile||'';$('billName').value=b.customerName||'';$('billDiscount').value=Number(b.discount||0);$('billDiscountType').value='rs';$('billReceived').value=Number(b.received||0);$('billPaymentMode').value=b.paymentMode||'Cash';billItems=(b.items||[]).map(x=>({...x}));renderBillItems();calcBill();setBillEditMode(true,b.billNo);showLastBillActions();renderBillPreview();openPage('billingCard','Billing / Sales');msg('billMsg','Bill '+esc(b.billNo)+' edit mode में है। Bill No. वही रहेगा।')}
 function cancelBillEdit(){setBillEditMode(false);msg('billMsg','Edit cancel कर दिया गया।');}
+async function editBill(no){return editSavedBill(no)}
 async function editSavedBill(no){try{const s=await db.ref('bills/'+no).once('value');if(!s.exists())return msg('billMsg','Bill नहीं मिला।',true);startEditBill(s.val())}catch(e){msg('billMsg',e.message,true)}}
 async function deleteSavedBill(no){if(!auth.currentUser)return msg('billMsg','पहले Staff Login करें।',true);if(!confirm('Bill '+no+' delete करना है? यह action वापस नहीं होगा।'))return;try{const s=await db.ref('bills/'+no).once('value');if(!s.exists())return msg('billMsg','Bill नहीं मिला।',true);await db.ref('bills/'+no).remove();if(lastBill?.billNo===no){lastBill=null;try{localStorage.removeItem('srd_last_bill')}catch(e){}$('billHistory').innerHTML=''}setBillEditMode(false);await loadBillHistory();updateHomeStats();msg('billMsg','Bill '+esc(no)+' delete हो गया ✅')}catch(e){msg('billMsg',e.message,true)}}
 function clearBillFormForNext(){billItems=[];setBillEditMode(false);renderBillItems();renderBillPreview();}
