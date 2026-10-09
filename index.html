@@ -155,7 +155,8 @@ body.page-mode .page-active .table-scroll td{
   <div class="srd-actions-final">
     <button class="qa-green" onclick="openModuleNewTab('qrPdfCard','QR Cards')"><span>▣</span><b>QR Card</b><small>Generate & Print</small><i>›</i></button>
     <button class="qa-blue" onclick="openModuleNewTab('customerSearchCard','Customers','new')"><span>👥</span><b>Customer</b><small>Add / Manage</small><i>›</i></button>
-    <button class="qa-orange" onclick="openModuleNewTab('billingCard','Billing / Sales')"><span>🧾</span><b>Billing</b><small>New Sale</small><i>›</i></button>
+    <button class="qa-orange" onclick="openModuleNewTab('billingCard','Billing / Sales')"><span>🧾</span><b>Main Billing</b><small>New Sale</small><i>›</i></button>
+    <button class="qa-green" onclick="openModuleNewTab('advanceBookingCard','Advance Booking')"><span>📦</span><b>Advance Booking</b><small>Booking / History</small><i>›</i></button>
     <button class="qa-lav" onclick="openModuleNewTab('scanCard','QR Scan','scan')"><span>🥛</span><b>Milk Entry</b><small>Daily Entry</small><i>›</i></button>
     <button class="qa-pink" onclick="openModuleNewTab('stockCard','Stock')"><span>📦</span><b>Products</b><small>Manage Stock</small><i>›</i></button>
     <button class="qa-purple" onclick="openModuleNewTab('reportCard','Reports')"><span>📊</span><b>Reports</b><small>View Reports</small><i>›</i></button>
@@ -171,8 +172,8 @@ body.page-mode .page-active .table-scroll td{
 <div class="card"><div class="section-title">आज का दूध वितरण</div><div class="dashboard-stat"><div class="stat"><span>👥 ग्राहक</span><b id="dashCustomer">—</b></div><div class="stat"><span>💧 चयनित</span><b id="dashLitres">—</b></div><div class="stat"><span>₹ राशि</span><b id="dashAmount">—</b></div></div><div class="muted" style="margin-top:9px">ग्राहक खोलने पर आज की entry यहाँ दिखाई जाएगी।</div></div>
 <div id="qrPdfCard" class="card pdf-card"><div class="section-title">🖨️ खाली QR Cards</div><div class="muted">जब नए कार्ड चाहिए हों, यहाँ से 50 unique QR cards का PDF बनाकर सीधे print कर सकते हैं।</div><button data-admin-only="1" onclick="generate50Cards()">50 QR Cards PDF बनाएं</button><div id="pdfMsg"></div></div>
 </div>
-<div id="billingCard" class="card module-card">
- <div class="section-title">🧾 Billing System</div>
+<div id="advanceBookingCard" class="card module-card" style="display:none">
+ <div class="section-title">📦 Advance Booking</div>
  <div class="advance-booking-box">
   <div class="advance-booking-head">
    <div><h3>📦 एडवांस बुकिंग</h3><small>ग्राहक द्वारा पहले से बुक किया गया सामान</small></div>
@@ -209,6 +210,11 @@ body.page-mode .page-active .table-scroll td{
   </div>
   <div id="advanceBookingHistory" class="advance-booking-history"></div>
  </div>
+</div>
+
+<div id="billingCard" class="card module-card">
+ <div class="section-title">🧾 Billing System</div>
+ <button class="secondary" type="button" onclick="openPage('advanceBookingCard','Advance Booking')">📦 Advance Booking खोलें</button>
 
  <div class="muted">एक bill में कई products • Receive + Pending • Discount • WhatsApp • PDF • 58mm Print</div>
  <div class="row"><input id="billCustomer" placeholder="Customer ID / Mobile (optional)"><input id="billName" placeholder="Customer Name"></div>
@@ -1008,7 +1014,7 @@ let appHistoryBusy=false;
 
 const SRD_APP_PAGES=[
   'customerSearchCard','customerCard','newCustomerCard','editCustomerCard',
-  'billingCard','scanCard','qrPdfCard','stockCard','financeCard','staffCard',
+  'billingCard','advanceBookingCard','scanCard','qrPdfCard','stockCard','financeCard','staffCard',
   'reportCard','settingsCard','backupCard','reminderCard','rateCard'
 ];
 
@@ -1087,7 +1093,7 @@ function showPage(id,title,mode,pushHistory=true){
   }
   if(id==='customerSearchCard' && typeof loadCustomerList==='function') loadCustomerList();
   if(id==='billingCard' && typeof loadBillHistory==='function') loadBillHistory();
-  if(id==='billingCard' && typeof renderAdvanceBookingHistory==='function') renderAdvanceBookingHistory();
+  if(id==='advanceBookingCard' && typeof renderAdvanceBookingHistory==='function') renderAdvanceBookingHistory();
   if(id==='staffCard' && typeof loadStaffList==='function') loadStaffList();
   if(id==='financeCard' && typeof loadFinance==='function') loadFinance();
   applyRolePermissions();
