@@ -330,7 +330,33 @@ async function loadCustomerList(){try{const box=$('customerList');if(!box)return
 function renderCustomerList(rows){const box=$('customerList');if(!box)return;if(!rows.length){box.innerHTML='<div class="muted">अभी कोई ग्राहक नहीं है।</div>';return}box.innerHTML=rows.map(c=>{const id=String(c.id||'');const safeId=encodeURIComponent(id);return '<button type="button" class="customer-list-item" data-customer-id="'+safeId+'" onclick="openCustomer(decodeURIComponent(this.dataset.customerId))"><div><b>'+esc(c.name||id)+'</b><div class="muted">'+esc(id)+(c.mobile?' • '+esc(c.mobile):'')+'</div></div><div style="text-align:right"><b>'+(c.type==='monthly'?'₹'+Math.round(c.due||0)+' Due':(Math.round(c.litres*10)/10)+' L')+'</b></div></button>'}).join('')}
 function filterCustomerList(){const q=String($('customerListSearch')?.value||'').trim().toLowerCase();const rows=window.srdCustomerList||[];renderCustomerList(!q?rows:rows.filter(c=>String(c.name||'').toLowerCase().includes(q)||String(c.id||'').toLowerCase().includes(q)||String(c.mobile||'').toLowerCase().includes(q)))}
 
-auth.onAuthStateChanged(u=>{if(cardQuery){$('loginCard').classList.add('hidden');$('app').classList.add('hidden');$('customerPortal').classList.remove('hidden');return;}if(u){$('loginCard').classList.add('hidden');$('app').classList.remove('hidden');$('userEmail').textContent=u.email||''}else{$('loginCard').classList.remove('hidden');$('app').classList.add('hidden')}});$('loginBtn').onclick=async()=>{try{await auth.signInWithEmailAndPassword($('email').value.trim(),$('password').value);msg('loginMsg','Login सफल ✅')}catch(e){msg('loginMsg',e.message,true)}};$('logoutBtn').onclick=()=>auth.signOut();$('newCustomerBtn').onclick=()=>{pendingCardId=null;$('selectedCard').classList.add('hidden');$('createBtn').disabled=true;$('createBtn').textContent='Card scan करने के बाद ग्राहक बनाएं';showPage('newCustomerCard','नया ग्राहक + Card Activate');};$('openCustomerBtn').onclick=()=>openCustomer($('searchId').value.trim().toUpperCase());
+auth.onAuthStateChanged(u=>{
+  if(cardQuery){
+    $('loginCard').classList.add('hidden');
+    $('app').classList.add('hidden');
+    $('customerPortal').classList.remove('hidden');
+    return;
+  }
+  // Anonymous auth is reserved for the read-only QR customer portal.
+  // Never let an anonymous portal session unlock the staff dashboard.
+  if(u && u.isAnonymous){
+    $('loginCard').classList.remove('hidden');
+    $('app').classList.add('hidden');
+    if(!window.__srdSigningOutAnonymous){
+      window.__srdSigningOutAnonymous=true;
+      auth.signOut().finally(()=>{window.__srdSigningOutAnonymous=false;});
+    }
+    return;
+  }
+  if(u){
+    $('loginCard').classList.add('hidden');
+    $('app').classList.remove('hidden');
+    $('userEmail').textContent=u.email||'';
+  }else{
+    $('loginCard').classList.remove('hidden');
+    $('app').classList.add('hidden');
+  }
+});$('loginBtn').onclick=async()=>{try{await auth.signInWithEmailAndPassword($('email').value.trim(),$('password').value);msg('loginMsg','Login सफल ✅')}catch(e){msg('loginMsg',e.message,true)}};$('logoutBtn').onclick=()=>auth.signOut();$('newCustomerBtn').onclick=()=>{pendingCardId=null;$('selectedCard').classList.add('hidden');$('createBtn').disabled=true;$('createBtn').textContent='Card scan करने के बाद ग्राहक बनाएं';showPage('newCustomerCard','नया ग्राहक + Card Activate');};$('openCustomerBtn').onclick=()=>openCustomer($('searchId').value.trim().toUpperCase());
 $('createBtn').onclick=async()=>{const id=$('newId').value.trim().toUpperCase(),name=$('newName').value.trim(),mobile=$('newMobile').value.trim(),type=$('newType').value,litres=Number($('newLitres').value||0);if(!pendingCardId)return msg('createMsg','पहले खाली QR Card scan करके चुनें।',true);if(!id||!name||!mobile)return msg('createMsg','ID, नाम और मोबाइल भरें।',true);if(type==='prepaid'&&litres<=0)return msg('createMsg','Prepaid ग्राहक के लिए litres भरें।',true);try{const customerRef=db.ref('customers/'+id),cardRef=db.ref('cards/'+pendingCardId);const [custSnap,cardSnap]=await Promise.all([customerRef.once('value'),cardRef.once('value')]);if(custSnap.exists())return msg('createMsg','यह Customer ID पहले से मौजूद है।',true);if(cardSnap.exists()&&cardSnap.val().status==='active')return msg('createMsg','यह QR Card पहले से किसी ग्राहक को दिया जा चुका है। दूसरा खाली card scan करें।',true);const data={id,name,mobile,type,cardId:pendingCardId,litres:type==='prepaid'?litres:0,balance:type==='prepaid'?litres*RATE:0,due:0,createdAt:firebase.database.ServerValue.TIMESTAMP,updatedAt:firebase.database.ServerValue.TIMESTAMP};await customerRef.set(data);await cardRef.set({status:'active',cardId:pendingCardId,customerId:id,activatedAt:firebase.database.ServerValue.TIMESTAMP,activatedBy:auth.currentUser.email});await customerRef.child('logs').push({type:'create',litresChange:data.litres,amountChange:data.balance,cardId:pendingCardId,by:auth.currentUser.email,at:firebase.database.ServerValue.TIMESTAMP});msg('createMsg','ग्राहक और QR Card दोनों activate हो गए ✅');$('searchId').value=id;openCustomer(id);loadCustomerList()}catch(e){msg('createMsg',e.message,true)}};
 function normalizeCardQr(code){let raw=String(code||'').replace(/[\r\n]/g,'').trim(),value=raw;try{const u=new URL(raw);const q=u.searchParams.get('card')||new URLSearchParams((u.hash.split('?')[1]||'')).get('card');if(q)value=q;else if(u.hash&&u.hash.length>1)value=u.hash.slice(1)}catch(e){const m=raw.match(/[?&#]card=([^&#]+)/i);if(m){try{value=decodeURIComponent(m[1].replace(/\+/g,'%20'))}catch(x){value=m[1]}}}value=String(value||'').trim().replace(/^\/+|\/+$/g,'');return value.toUpperCase()}
 async function openByQr(code){const value=normalizeCardQr(code);if(!value)return msg('scanMsg','QR खाली है।',true);try{const cardSnap=await db.ref('cards/'+value).once('value');if(cardSnap.exists()){const card=cardSnap.val();if(card.status==='active'&&card.customerId)return openCustomer(card.customerId);return msg('scanMsg','यह QR Card अभी activate नहीं हुआ है।',true)}return openCustomer(value)}catch(e){msg('scanMsg',e.message,true)}}
