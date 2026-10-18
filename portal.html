@@ -1,0 +1,18 @@
+<!doctype html><html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>मेरा दूध Balance | Shree Ram Dairy</title><link rel="stylesheet" href="css/styles.css"></head>
+<body><div class="scene" aria-hidden="true"><i class="orb o1"></i><i class="orb o2"></i><i class="orb o3"></i></div>
+<main class="center"><div class="panel tilt login-card" id="box"><div class="logo">🥛</div><h1>Shree Ram Dairy</h1><p class="muted">लोड हो रहा है…</p></div></main>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import {getDatabase,ref,onValue} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+import cfg from "./js/firebase-config.js";
+const t=new URLSearchParams(location.search).get("t"),box=document.getElementById("box");
+const e=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+if(!/^[a-z2-9]{12}$/.test(t||""))box.innerHTML="<h1>Invalid QR</h1>";
+else onValue(ref(getDatabase(initializeApp(cfg)),"portal/"+t),s=>{const c=s.val();
+ if(!c)return box.innerHTML="<h1>ग्राहक नहीं मिला</h1>";
+ box.innerHTML=`<div class="logo">🥛</div><h2>${e(c.name)}</h2>`+(c.type==="monthly"
+  ?`<div class="muted">इस महीने का बकाया</div><div class="big">₹${Math.round(c.due)}</div>`
+  :`<div class="muted">बाकी दूध</div><div class="big">${+Number(c.litres).toFixed(2)} L</div><div class="muted">Balance ₹${Math.round(c.balance)}</div>`)
+  +`<p class="muted">Updated ${new Date(c.updatedAt).toLocaleString("en-IN")}</p>`});
+</script></body></html>

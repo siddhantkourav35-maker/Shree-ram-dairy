@@ -1,0 +1,67 @@
+# Staff = any signed-in user (disable public sign-up in Auth!). Owner = custom claim owner:true.
+
+query ListCustomers($limit: Int = 300) @auth(level: USER) {
+  customers(where: { isActive: { eq: true } }, orderBy: [{ name: ASC }], limit: $limit) {
+    id code name mobile type litres balance due portalToken updatedAt
+  }
+}
+query SearchCustomers($q: String!) @auth(level: USER) {
+  customers(where: { isActive: { eq: true }, _or: [{ name: { contains: $q } }, { mobile: { contains: $q } }, { code: { contains: $q } }] }, limit: 50) {
+    id code name mobile type litres balance due portalToken
+  }
+}
+query GetCustomerByCode($code: String!) @auth(level: USER) {
+  customers(where: { code: { eq: $code } }, limit: 1) { id code name mobile type litres balance due portalToken }
+}
+query GetCustomerByToken($token: UUID!) @auth(level: USER) {
+  customers(where: { portalToken: { eq: $token } }, limit: 1) { id code name type litres balance due }
+}
+query LowBalanceCustomers($max: Float = 2) @auth(level: USER) {
+  customers(where: { isActive: { eq: true }, type: { eq: "prepaid" }, litres: { le: $max } }, orderBy: [{ litres: ASC }], limit: 50) { id code name mobile litres }
+}
+# Public customer page: knows only the unguessable token, sees only these fields
+query PortalByToken($token: UUID!) @auth(level: PUBLIC) {
+  customers(where: { portalToken: { eq: $token } }, limit: 1) { name type litres balance due updatedAt }
+}
+query CustomerLedger($customerId: UUID!, $limit: Int = 25) @auth(level: USER) {
+  customerLedgers(where: { customer: { id: { eq: $customerId } } }, orderBy: [{ createdAt: DESC }], limit: $limit) {
+    kind litres amount note createdBy createdAt
+  }
+}
+
+query ListProducts @auth(level: USER) {
+  products(where: { isActive: { eq: true } }, orderBy: [{ sortOrder: ASC }, { name: ASC }]) { id name rate unit trackStock }
+}
+query ListStock @auth(level: USER) { stockItems { qty minQty updatedAt product { id name } } }
+
+query ListBills($since: Date!, $limit: Int = 400) @auth(level: USER) {
+  bills(where: { billDate: { ge: $since }, deletedAt: { isNull: true } }, orderBy: [{ billDate: DESC }, { billNo: DESC }], limit: $limit) {
+    id billNo billDate mobile mode total createdBy editedAt customer { code name }
+    billItems_on_bill { name rate qty }
+  }
+}
+query ListExpenses($since: Date!) @auth(expr: "auth.token.owner == true") {
+  expenses(where: { expenseDate: { ge: $since } }, orderBy: [{ expenseDate: DESC }], limit: 500) { id expenseDate title amount category }
+}
+
+query ListBookings($status: String) @auth(level: USER) {
+  bookings(where: { status: { eq: $status } }, orderBy: [{ deliveryDate: ASC }, { deliveryTime: ASC }], limit: 300) {
+    id bookingNo name mobile productName qty rate advance deliveryDate deliveryTime note status
+  }
+}
+query OpenBookings @auth(level: USER) {
+  bookings(where: { status: { in: ["Pending", "Ready"] } }, orderBy: [{ deliveryDate: ASC }], limit: 300) {
+    id bookingNo name mobile productName qty rate advance deliveryDate deliveryTime note status
+  }
+}
+
+query ListStaff @auth(expr: "auth.token.owner == true") { staffMembers(where: { isActive: { eq: true } }, orderBy: [{ name: ASC }]) { id name mobile monthlySalary startDate } }
+query StaffMonthEntries($staffId: UUID!, $from: Date!, $to: Date!) @auth(expr: "auth.token.owner == true") {
+  staffEntries(where: { staff: { id: { eq: $staffId } }, entryDate: { ge: $from, lt: $to } }, orderBy: [{ entryDate: DESC }]) { id entryDate type amount note }
+  staffMonths(where: { staff: { id: { eq: $staffId } }, month: { eq: $from } }) { salary }
+}
+
+query CustomerFiles($customerId: UUID!) @auth(level: USER) {
+  fileObjects(where: { customer: { id: { eq: $customerId } }, deletedAt: { isNull: true } }, orderBy: [{ createdAt: DESC }]) { id storagePath kind contentType sizeBytes createdAt }
+}
+query GetSetting($key: String!) @auth(level: USER) { appSetting(key: { key: $key }) { value } }

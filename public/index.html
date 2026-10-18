@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#c2570c">
+<link rel="manifest" href="manifest.json">
+<title>Shree Ram Dairy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;500;700&family=Rozha+One&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css?v=20261018c">
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+</head>
+<body>
+<div class="scene" aria-hidden="true"><i class="orb o1"></i><i class="orb o2"></i><i class="orb o3"></i></div>
+<div id="prog"></div>
+<div id="toasts"></div>
+
+<!-- LOGIN -->
+<main id="login" class="center" style="display:grid">
+  <form class="panel tilt login-card" id="loginForm">
+    <div class="logo">🥛</div><h1>श्री राम डेयरी</h1><p class="muted">शुद्ध दूध • ताज़ा दही • देसी घी<br>Gadarwara • Staff Login</p>
+    <input id="email" type="email" placeholder="Email" autocomplete="username" required>
+    <input id="password" type="password" placeholder="Password" autocomplete="current-password" required>
+    <button class="btn" type="submit">Login</button>
+    <button class="link" type="button" id="forgot">Password भूल गए?</button>
+    <div style="margin-top:14px;border-top:1px solid var(--edge);padding-top:10px">
+      <a href="portal.html" class="link" style="text-decoration:none;font-weight:600;font-size:14px">👤 क्या आप ग्राहक हैं? Customer Portal ➔</a>
+    </div>
+  </form>
+</main>
+
+<!-- APP -->
+<div id="app" hidden style="display:none">
+  <header class="topbar panel">
+    <div class="topbar-user">
+      <b class="brand">🐄 श्री राम डेयरी</b>
+      <small id="who" class="muted"></small>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="themeBtn" title="Theme" aria-label="थीम बदलें">🌓</button>
+      <button class="icon-btn logout-btn" id="logoutBtn" title="Logout" aria-label="लॉगआउट">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <section data-view="home" class="view">
+    <div class="hero panel tilt clickable" data-go="bill" title="क्लिक करें: Bill और बिक्री देखें"><small class="muted">आज की बिक्री (Bill देखें ➔)</small><div class="big" id="hSales">₹0</div><small id="hBills" class="muted"></small></div>
+    <div class="grid2">
+      <div class="panel tilt stat clickable" data-go="customers" title="सभी ग्राहक देखें"><span>👥</span><b id="hCust">0</b><small>ग्राहक (देखें ➔)</small></div>
+      <div class="panel tilt stat clickable" id="cardPrepaid" title="Prepaid ग्राहक देखें"><span>🥛</span><b id="hLitres">0 L</b><small>Prepaid बाकी दूध</small></div>
+      <div class="panel tilt stat clickable" id="cardLow" title="कम balance वाले ग्राहक"><span>⚠️</span><b id="hLow">0</b><small>कम balance (≤2 L)</small></div>
+      <div class="panel tilt stat clickable" id="cardDue" title="Monthly बकाया वाले ग्राहक"><span>🧾</span><b id="hDue">₹0</b><small>Monthly बकाया</small></div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="qScan">📷 QR Scan</button>
+      <button class="btn soft" id="qNew">➕ नया ग्राहक</button>
+      <button class="btn soft" data-go="bill">🧾 नया Bill</button>
+    </div>
+    <div class="panel" id="lowList"></div>
+  </section>
+
+  <section data-view="customers" class="view" hidden>
+    <div class="panel"><input id="search" type="search" placeholder="नाम / मोबाइल / ID खोजें"><div id="custList" class="list"></div></div>
+  </section>
+
+  <section data-view="bill" class="view" hidden>
+    <div class="panel"><h2>नया Bill</h2><div id="chips" class="chips"></div><div id="cart"></div>
+      <div class="row"><input id="bMobile" inputmode="tel" placeholder="ग्राहक मोबाइल (optional)">
+      <select id="bMode"><option>Cash</option><option>UPI</option><option>Card (Prepaid)</option></select></div>
+      <div class="total">कुल <b id="bTotal">₹0</b></div>
+      <div class="actions"><button class="btn" id="bSave">💾 Save + Print</button><button class="btn soft" id="bWa">WhatsApp</button><button class="btn ghost" id="bClear">Clear</button></div></div>
+    <div class="panel"><h3>हाल के Bills</h3><div id="billList" class="list"></div></div>
+  </section>
+
+  <section data-view="stock" class="view" hidden>
+    <div class="panel"><h2>Stock</h2><div class="row"><input id="sName" placeholder="Item का नाम (Bill जैसा)"><input id="sQty" type="number" placeholder="Qty"><input id="sMin" type="number" placeholder="Min alert"></div>
+      <button class="btn" id="sSave">Save</button><div id="stockList" class="list"></div></div>
+  </section>
+
+  <section data-view="money" class="view" hidden>
+    <div class="panel tilt hero"><small class="muted">इस महीने का मुनाफ़ा</small><div class="big" id="mProfit">₹0</div>
+      <small id="mSplit" class="muted"></small></div>
+    <div class="panel admin-only"><h3>खर्च जोड़ें</h3><div class="row"><input id="eTitle" placeholder="क्या खर्च (चारा, बिजली…)"><input id="eAmt" type="number" placeholder="₹"></div>
+      <button class="btn" id="eSave">Add</button><div id="expList" class="list"></div></div>
+    <div class="panel"><h3>Reports (CSV)</h3><div class="actions"><button class="btn soft" data-csv="customers">Customers</button><button class="btn soft" data-csv="bills">Bills</button><button class="btn soft admin-only" data-csv="expenses">Expenses</button></div></div>
+  </section>
+
+  <section data-view="bookings" class="view" hidden></section>
+  <section data-view="staff" class="view" hidden></section>
+  <section data-view="more" class="view" hidden></section>
+
+  <nav class="dock panel">
+    <button data-go="home" class="on"><i>🏠</i><span>Home</span></button>
+    <button data-go="customers"><i>👥</i><span>ग्राहक</span></button>
+    <button data-go="bill"><i>🧾</i><span>Bill</span></button>
+    <button data-go="stock"><i>📦</i><span>Stock</span></button>
+    <button data-go="money"><i>📊</i><span>हिसाब</span></button>
+    <button data-go="more"><i>⋯</i><span>और</span></button>
+  </nav>
+</div>
+
+<!-- Bottom sheets -->
+<div id="backdrop" hidden style="display:none"></div>
+<aside id="sheet" class="sheet panel" hidden style="display:none"></aside>
+<div id="print-area"></div>
+<script type="module" src="js/app.js?v=20261018c"></script>
+</body>
+</html>
