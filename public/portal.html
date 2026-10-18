@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b7a5b">
+<title>ग्राहक पोर्टल (Customer Portal) | श्री राम डेयरी</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;500;600;700&family=Rozha+One&family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css?v=20261018c">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+<style>
+.badge{display:inline-block;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700}
+.badge.prepaid{background:var(--g2);color:var(--g)}
+.badge.monthly{background:#e8f0fe;color:#1a73e8}
+.badge.low{background:#fde3dc;color:var(--warn)}
+.badge.success{background:#e6f4ea;color:#137333}
+
+.cust-card{position:relative;background:linear-gradient(135deg,var(--g),#074d39);color:#fff;border-radius:24px;padding:22px;box-shadow:0 18px 36px -14px rgba(11,122,91,.5);overflow:hidden}
+.cust-card::after{content:"🥛";position:absolute;right:-10px;bottom:-20px;font-size:120px;opacity:.15;pointer-events:none}
+.cust-card b{color:#fff}
+.cust-card .big{color:#fff;font-size:clamp(36px,9vw,54px);margin:4px 0}
+.cust-card .muted{color:rgba(255,255,255,.8)}
+
+.delivery-item{display:flex;align-items:center;gap:12px;padding:12px 6px;border-bottom:1px solid var(--edge)}
+.delivery-item:last-child{border:0}
+.d-icon{width:42px;height:42px;border-radius:14px;background:var(--g2);color:var(--g);display:grid;place-items:center;font-size:20px;flex-shrink:0}
+.d-info{flex:1;min-width:0}
+.d-info b{display:block;font-size:15px}
+.d-info small{color:var(--mut);font-size:12px}
+
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:12px;margin:12px 0}
+.prod-card{background:var(--glass);border:1px solid var(--edge);border-radius:18px;padding:14px;text-align:center;display:flex;flex-direction:column;justify-content:space-between;transition:transform .15s}
+.prod-card:active{transform:scale(.97)}
+.prod-card .icon{font-size:38px;margin-bottom:6px}
+.prod-card h4{margin:0 0 4px;font-size:15px;font-family:inherit}
+.prod-card .price{font-size:16px;font-weight:700;color:var(--g);margin-bottom:8px}
+
+.tab-btn{border:0;background:none;padding:10px 16px;font:600 14px inherit;border-radius:14px;cursor:pointer;color:var(--mut);transition:.2s}
+.tab-btn.active{background:var(--g);color:#fff}
+
+.pass-card{background:#fff;color:#14221c;border-radius:22px;padding:20px;border:2px dashed var(--g);box-shadow:var(--sh);text-align:center;max-width:320px;margin:auto}
+:root[data-theme=dark] .pass-card{background:#182c25;color:#eaf3ee}
+
+.quick-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}
+.quick-btn{display:grid;place-items:center;gap:4px;padding:10px 4px;border:1px solid var(--edge);border-radius:16px;background:var(--glass);font:600 12px inherit;color:var(--ink);cursor:pointer;text-decoration:none;transition:transform .15s}
+.quick-btn:active{transform:scale(.95)}
+.quick-btn span{font-size:22px}
+</style>
+</head>
+<body>
+<div class="scene" aria-hidden="true"><i class="orb o1"></i><i class="orb o2"></i><i class="orb o3"></i></div>
+<div id="toasts"></div>
+
+<!-- ================= CUSTOMER LOGIN SCREEN ================= -->
+<main id="cLogin" class="center" style="display:grid">
+  <div class="panel tilt login-card">
+    <div class="logo">🥛</div>
+    <h1 style="font-family:'Rozha One',serif;margin-bottom:2px">श्री राम डेयरी</h1>
+    <p class="muted" style="margin-top:0">ग्राहक पोर्टल • Customer Self-Service</p>
+
+    <!-- Login Mode Switcher Tabs -->
+    <div style="display:flex;background:var(--g2);padding:4px;border-radius:16px;margin:14px 0;gap:4px">
+      <button class="tab-btn active" id="tabId" style="flex:1">ID / मोबाइल</button>
+      <button class="tab-btn" id="tabEmail" style="flex:1">ईमेल लॉगिन</button>
+      <button class="tab-btn" id="tabDemo" style="flex:1">डेमो (1-Click)</button>
+    </div>
+
+    <!-- Mode 1: Customer ID or Mobile + PIN -->
+    <form id="formById">
+      <input id="custIdOrMob" placeholder="Customer ID (उदा. SRD-001) या मोबाइल" required autocomplete="username">
+      <input id="custPin" type="password" placeholder="PIN / पासवर्ड (डिफ़ॉल्ट: 1234)" required autocomplete="current-password">
+      <button class="btn" style="width:100%;margin-top:6px" type="submit">लॉगिन करें ➔</button>
+    </form>
+
+    <!-- Mode 2: Firebase Auth Email & Password -->
+    <form id="formByEmail" style="display:none">
+      <input id="cEmail" type="email" placeholder="पंजीकृत ईमेल (उदा. ramesh@shreeramdairy.com)" required autocomplete="username">
+      <input id="cPass" type="password" placeholder="पासवर्ड (Password@123)" required autocomplete="current-password">
+      <button class="btn" style="width:100%;margin-top:6px" type="submit">ईमेल से लॉगिन ➔</button>
+    </form>
+
+    <!-- Mode 3: Demo 1-Click test accounts -->
+    <div id="demoAccounts" style="display:none;margin-top:10px;text-align:left">
+      <small class="muted" style="display:block;margin-bottom:8px">तुरंत टेस्ट करने के लिए क्लिक करें:</small>
+      <div style="display:grid;gap:8px">
+        <button class="btn soft demo-btn" data-c="rameshpatel1" type="button" style="text-align:left;display:flex;justify-content:space-between;align-items:center">
+          <span><b>रमेश पटेल</b><br><small class="muted">SRD-001 • Prepaid (24.5 L)</small></span>
+          <span class="badge prepaid">लॉगिन ➔</span>
+        </button>
+        <button class="btn soft demo-btn" data-c="sunitasharm2" type="button" style="text-align:left;display:flex;justify-content:space-between;align-items:center">
+          <span><b>सुनीता शर्मा</b><br><small class="muted">SRD-002 • Prepaid (1.5 L कम balance)</small></span>
+          <span class="badge low">लॉगिन ➔</span>
+        </button>
+        <button class="btn soft demo-btn" data-c="rajeshverma3" type="button" style="text-align:left;display:flex;justify-content:space-between;align-items:center">
+          <span><b>राजेश वर्मा</b><br><small class="muted">SRD-003 • Monthly (₹1470 बकाया)</small></span>
+          <span class="badge monthly">लॉगिन ➔</span>
+        </button>
+      </div>
+    </div>
+
+    <div style="margin-top:18px;border-top:1px solid var(--edge);padding-top:12px">
+      <a href="index.html" class="link" style="text-decoration:none;font-weight:600;font-size:14px">🏢 स्टाफ व ओनर पोर्टल पर जाएं ➔</a>
+    </div>
+  </div>
+</main>
+
+
+<!-- ================= CUSTOMER PORTAL MAIN APP ================= -->
+<div id="cApp" style="display:none;max-width:760px;margin:auto;padding:0 14px">
+
+  <!-- Topbar -->
+  <header class="topbar panel">
+    <div class="topbar-user">
+      <b class="brand" style="font-family:'Rozha One',serif">🥛 श्री राम डेयरी</b>
+      <small id="cWho" class="muted">ग्राहक पोर्टल</small>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="cThemeBtn" title="Theme" aria-label="थीम">🌓</button>
+      <button class="icon-btn logout-btn" id="cLogoutBtn" title="Logout" aria-label="लॉगआउट">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- VIEW 1: HOME (डैशबोर्ड) -->
+  <section id="viewHome" class="view">
+    <!-- Customer Hero Card -->
+    <div class="cust-card tilt" id="heroCard">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <span class="badge prepaid" id="heroBadge">Prepaid Plan</span>
+          <h2 id="cName" style="color:#fff;margin:6px 0 2px;font-family:'Rozha One',serif">लोड हो रहा है…</h2>
+          <small class="muted" id="cIdMobile">SRD-000 • 9826000000</small>
+        </div>
+        <button class="icon-btn" id="btnShowPass" title="QR Pass" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)">🪪</button>
+      </div>
+
+      <div style="margin-top:16px">
+        <small class="muted" id="heroLabel">उपलब्ध बाकी दूध</small>
+        <div class="big" id="heroValue">0 L</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+          <span class="muted" id="heroSubValue">खाता मूल्य: ₹0</span>
+          <span class="muted" id="heroDaily">प्रतिदिन: 1.5 L</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Today's Delivery Status Card -->
+    <div class="panel" style="display:flex;align-items:center;gap:12px;margin:12px 0">
+      <div style="font-size:32px">🚚</div>
+      <div style="flex:1">
+        <b style="display:block" id="todayStatusTitle">आज का दूध प्राप्त हुआ ✅</b>
+        <small class="muted" id="todayStatusDesc">सुबह 06:45 AM पर 1.5 L डिलीवर किया गया</small>
+      </div>
+      <span class="badge success" id="todayStatusBadge">Delivered</span>
+    </div>
+
+    <!-- Quick Action Bar -->
+    <div class="quick-bar">
+      <button class="quick-btn" id="btnQuickOrder"><span>🛒</span>ऑर्डर करें</button>
+      <button class="quick-btn" id="btnQuickPause"><span>⏸️</span>छुट्टी / रोकें</button>
+      <button class="quick-btn" id="btnQuickPay"><span>💳</span>UPI पे</button>
+      <a class="quick-btn" id="btnQuickWa" target="_blank" rel="noopener"><span>💬</span>व्हाट्सएप</a>
+    </div>
+
+    <!-- Recent Delivery Timeline -->
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h3 style="margin:0">हाल का वितरण इतिहास</h3>
+        <button class="link" id="linkAllDeliveries" style="font-size:13px;margin:0">सभी देखें ➔</button>
+      </div>
+      <div id="recentDeliveryList"></div>
+    </div>
+  </section>
+
+  <!-- VIEW 2: DIARY (दूध वितरण डायरी) -->
+  <section id="viewDiary" class="view" style="display:none">
+    <div class="panel">
+      <h2 style="font-family:'Rozha One',serif;margin-bottom:4px">दूध वितरण डायरी</h2>
+      <p class="muted" style="margin-top:0">तारीख व समय अनुसार प्राप्त दूध का पूरा बहीखाता</p>
+      <div class="grid2" style="margin:12px 0">
+        <div class="panel stat"><span>🥛</span><b id="diaryTotalL">0 L</b><small>इस महीने कुल दूध</small></div>
+        <div class="panel stat"><span>📅</span><b id="diaryDays">0 दिन</b><small>वितरण दिवस</small></div>
+      </div>
+      <div class="list" id="fullDeliveryList"></div>
+    </div>
+  </section>
+
+  <!-- VIEW 3: ORDER (एक्स्ट्रा उत्पाद ऑर्डर) -->
+  <section id="viewOrder" class="view" style="display:none">
+    <div class="panel">
+      <h2 style="font-family:'Rozha One',serif;margin-bottom:4px">डेयरी उत्पाद ऑर्डर करें</h2>
+      <p class="muted" style="margin-top:0">ताजा दूध, पनीर, घी या दही अगली सुबह की डिलीवरी के साथ पाएं</p>
+
+      <div class="prod-grid" id="productGrid">
+        <!-- Injected via JS -->
+      </div>
+
+      <!-- Current Cart in Order View -->
+      <div id="orderCartBox" style="background:var(--g2);border-radius:18px;padding:16px;margin-top:14px;display:none">
+        <h4 style="margin:0 0 8px">आपका ऑर्डर:</h4>
+        <div id="orderCartItems"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:17px">
+          <b>कुल योग:</b>
+          <b style="color:var(--g)" id="orderCartTotal">₹0</b>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <input id="orderNote" placeholder="कोई खास निर्देश (उदा. सुबह 7 बजे से पहले)">
+        </div>
+        <button class="btn" id="btnSubmitOrder" style="width:100%;margin-top:8px">ऑर्डर कन्फर्म करें ➔</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- VIEW 4: BILLS & PAYMENT (बिल व रसीदें) -->
+  <section id="viewBills" class="view" style="display:none">
+    <div class="panel">
+      <h2 style="font-family:'Rozha One',serif;margin-bottom:4px">बिल व भुगतान</h2>
+      <p class="muted" style="margin-top:0">आपका खाता विवरण व ऑनलाइन भुगतान सुविधा</p>
+
+      <div class="panel" style="background:var(--g2);border-color:var(--g)">
+        <small class="muted" id="billStatLabel">वर्तमान खाता स्थिति</small>
+        <div class="big" id="billStatValue" style="color:var(--g)">₹0</div>
+        <p class="muted" id="billStatDesc" style="margin:4px 0 12px">खाता सक्रिय है</p>
+        <button class="btn" id="btnOpenUpiModal" style="width:100%">⚡ UPI से सीधे भुगतान करें (GPay/PhonePe)</button>
+      </div>
+
+      <h3>खाता सारांश (Statement)</h3>
+      <div class="list" id="statementList"></div>
+    </div>
+  </section>
+
+  <!-- VIEW 5: DIGITAL PASS (डिजिटल QR पास) -->
+  <section id="viewPass" class="view" style="display:none">
+    <div class="panel" style="text-align:center">
+      <h2 style="font-family:'Rozha One',serif;margin-bottom:4px">डिजिटल ग्राहक पास</h2>
+      <p class="muted" style="margin-top:0">डेयरी डिलीवरी बॉय यह कोड स्कैन करके दूध दर्ज कर सकता है</p>
+
+      <div class="pass-card">
+        <div style="font-size:36px">🥛</div>
+        <h3 style="margin:4px 0 2px;font-family:'Rozha One',serif">श्री राम डेयरी</h3>
+        <small class="muted">गाडरवारा (म.प्र.)</small>
+        <div class="qrbox" id="passQr" style="margin:14px auto"></div>
+        <b style="font-size:18px;display:block" id="passName">-</b>
+        <span class="badge prepaid" id="passBadge" style="margin:6px 0">Prepaid</span>
+        <div style="font-size:12px;color:var(--mut);margin-top:8px" id="passMeta">ID: SRD-000 • 9826000000</div>
+      </div>
+
+      <div class="actions" style="max-width:320px;margin:16px auto 0">
+        <button class="btn soft" id="btnSaveCard" style="width:100%">📲 पास स्क्रीनशॉट लें</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bottom Navigation Dock for Customer -->
+  <nav class="dock panel">
+    <button class="on" data-tab="viewHome"><i>🏠</i><span>होम</span></button>
+    <button data-tab="viewDiary"><i>📅</i><span>डायरी</span></button>
+    <button data-tab="viewOrder"><i>🛒</i><span>ऑर्डर</span></button>
+    <button data-tab="viewBills"><i>🧾</i><span>बिल</span></button>
+    <button data-tab="viewPass"><i>🪪</i><span>पास</span></button>
+  </nav>
+
+</div>
+
+<!-- Customer Bottom Sheets / Modals -->
+<div id="cBackdrop" hidden style="display:none"></div>
+<aside id="cSheet" class="sheet panel" hidden style="display:none"></aside>
+
+<script type="module" src="js/portal.js?v=20261018c"></script>
+</body>
+</html>

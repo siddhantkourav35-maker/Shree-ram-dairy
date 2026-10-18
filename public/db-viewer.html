@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shree Ram Dairy • DB Viewer</title>
+<style>
+:root{--bg:#f4f7f6;--card:#fff;--ink:#17201d;--mut:#65716d;--g:#087f5b;--line:#e3ebe7}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 system-ui,"Segoe UI",sans-serif}
+header{background:var(--g);color:#fff;padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}header b{font-size:18px}header span{flex:1;opacity:.85}
+button,input,select{font:inherit}button{border:0;border-radius:8px;padding:8px 12px;background:var(--g);color:#fff;font-weight:600;cursor:pointer}button.s{background:#e6f3ee;color:var(--g)}
+input{padding:9px;border:1px solid #cbd7d2;border-radius:8px}
+#login{max-width:340px;margin:12vh auto;background:var(--card);padding:22px;border-radius:14px;box-shadow:0 4px 18px #0001;display:grid;gap:10px}
+#main{display:grid;grid-template-columns:240px 1fr;gap:12px;padding:12px;height:calc(100vh - 56px)}
+#side{background:var(--card);border-radius:12px;padding:8px;overflow:auto}
+#side div{padding:8px 10px;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;gap:6px}#side div:hover{background:#eef6f3}#side .on{background:#e0f1ea;font-weight:700}#side small{color:var(--mut)}#side .no{opacity:.45;cursor:default}
+#view{background:var(--card);border-radius:12px;padding:12px;overflow:auto}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}.bar h2{margin:0;font-size:17px;flex:1}
+table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+th{position:sticky;top:0;background:#eef6f3;cursor:pointer;user-select:none}td a{color:var(--g);cursor:pointer;font-weight:600}
+pre{background:#0f1f1a;color:#c9f2de;padding:12px;border-radius:10px;overflow:auto;max-height:70vh;white-space:pre-wrap}
+.err{color:#9d1c13;margin:6px 0}.mut{color:var(--mut)}.hidden{display:none!important}
+@media(max-width:700px){#main{grid-template-columns:1fr;height:auto}#side{display:flex;gap:6px;overflow:auto}#side div{white-space:nowrap}}
+</style></head><body>
+<header><b>🥛 DB Viewer</b><span id="who"></span><button class="s" id="out" hidden>Logout</button></header>
+<form id="login"><b>Staff Login</b><input id="em" type="email" placeholder="Email" required><input id="pw" type="password" placeholder="Password" required><button>Login</button><div id="le" class="err"></div></form>
+<div id="main" hidden><aside id="side"></aside><section id="view"><p class="mut">बाईं तरफ से table चुनें</p></section></div>
+
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,signOut} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import {getDatabase,ref,get} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+const app=initializeApp({apiKey:"AIzaSyDlMKJIMT6CFoXgV0HuovbmWbD1C5xTwQM",authDomain:"shree-ram-dairy-3a2b8.firebaseapp.com",databaseURL:"https://shree-ram-dairy-3a2b8-default-rtdb.firebaseio.com",projectId:"shree-ram-dairy-3a2b8",appId:"1:1090136134112:web:96396bb470797f19541b85"});
+const auth=getAuth(app),db=getDatabase(app),$=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+// Used only if reading the whole DB root is not allowed by your rules
+const KNOWN=["customers","cards","bills","stock","stockLogs","expenses","advanceBookings","staff","staffProfiles","staffRecords","settings","meta","logs","tokens","portal","admins"];
+let tables={},cur=null,sortK=null,sortD=1;
+
+$("#login").onsubmit=async e=>{e.preventDefault();$("#le").textContent="";try{await signInWithEmailAndPassword(auth,$("#em").value.trim(),$("#pw").value)}catch(x){$("#le").textContent=x.message}};
+$("#out").onclick=()=>signOut(auth);
+onAuthStateChanged(auth,u=>{$("#login").hidden=!!u;$("#main").hidden=!u;$("#out").hidden=!u;$("#who").textContent=u?.email||"";if(u)load()});
+
+const isObj=v=>v&&typeof v==="object";
+// Turn a node into table(s): rows = children; nested object-of-objects become sub-tables "parent › key"
+function build(name,val){
+  if(!isObj(val)){tables[name]={rows:[{value:val}]};return}
+  const entries=Object.entries(val);
+  if(entries.every(([,v])=>!isObj(v))){tables[name]={rows:entries.map(([k,v])=>({key:k,value:v}))};return}
+  const rows=entries.map(([k,v])=>isObj(v)?{_key:k,...v}:{_key:k,value:v});
+  tables[name]={rows};
+  const subs={};
+  entries.forEach(([k,v])=>isObj(v)&&Object.entries(v).forEach(([f,x])=>{
+    if(isObj(x)&&Object.values(x).some(isObj)){(subs[f]??={})[k]=x}}));
+  Object.entries(subs).forEach(([f,byParent])=>{
+    const r=[];Object.entries(byParent).forEach(([p,kids])=>Object.entries(kids).forEach(([id,o])=>r.push({_parent:p,_key:id,...(isObj(o)?o:{value:o})})));
+    tables[name+" › "+f]={rows:r};
+  });
+}
+async function load(){
+  tables={};$("#side").innerHTML="<div class=no>लोड हो रहा है…</div>";const denied=[];
+  try{const s=await get(ref(db));const v=s.val()||{};Object.entries(v).forEach(([k,x])=>build(k,x))}
+  catch{ // root denied → try each path
+    await Promise.all(KNOWN.map(async p=>{try{const s=await get(ref(db,p));if(s.exists())build(p,s.val())}catch{denied.push(p)}}));
+  }
+  drawSide(denied);const first=Object.keys(tables)[0];if(first)show(first);else $("#view").innerHTML="<p class=err>कोई readable data नहीं मिला। Rules / staff-admin role जाँचें।</p>";
+}
+function drawSide(denied){
+  $("#side").innerHTML=Object.entries(tables).sort().map(([n,t])=>`<div data-t="${esc(n)}" class="${n===cur?"on":""}"><span>${esc(n)}</span><small>${t.rows.length}</small></div>`).join("")
+   +denied.map(p=>`<div class=no title="Permission denied">🔒 ${esc(p)}</div>`).join("")
+   +`<div id=custom style="display:grid;gap:6px;cursor:default"><input id=cp placeholder="custom path e.g. customers/SRD-001"><button class=s id=cg>खोलें</button></div>`;
+  $("#cg").onclick=async()=>{const p=$("#cp").value.trim().replace(/^\/|\/$/g,"");if(!p)return;try{const s=await get(ref(db,p));build(p,s.val());drawSide(denied);show(p)}catch(x){alert(x.message)}};
+}
+$("#side").onclick=e=>{const d=e.target.closest("[data-t]");if(d)show(d.dataset.t)};
+
+const fmt=(k,v)=>{if(isObj(v))return `<a data-j='${esc(JSON.stringify(v))}'>▸ ${Object.keys(v).length} items</a>`;
+  if(typeof v==="number"&&/(^|_)(at|date)$|At$|^at$/.test(k)&&v>1e11)return esc(new Date(v).toLocaleString("en-IN"));return esc(v)};
+function show(n){
+  cur=n;sortK=null;document.querySelectorAll("#side [data-t]").forEach(d=>d.classList.toggle("on",d.dataset.t===n));
+  $("#view").innerHTML=`<div class=bar><h2>${esc(n)} <span class=mut>(<span id=cnt></span> rows)</span></h2><input id=q placeholder="खोजें…"><button class=s id=jb>JSON</button><button id=cb>CSV ⬇</button></div><div id=tb></div>`;
+  $("#q").oninput=draw;$("#cb").onclick=csv;$("#jb").onclick=()=>$("#tb").innerHTML=`<pre>${esc(JSON.stringify(Object.fromEntries(tables[n].rows.map((r,i)=>[r._key??r.key??i,r])),null,2))}</pre>`;
+  draw();
+}
+function cols(rows){const s=new Set();rows.forEach(r=>Object.keys(r).forEach(k=>s.add(k)));return [...s]}
+function filtered(){const t=tables[cur],q=$("#q").value.toLowerCase();let r=t.rows.filter(x=>!q||JSON.stringify(x).toLowerCase().includes(q));
+  if(sortK)r=[...r].sort((a,b)=>(a[sortK]>b[sortK]?1:a[sortK]<b[sortK]?-1:0)*sortD);return r}
+function draw(){
+  const r=filtered(),c=cols(tables[cur].rows);$("#cnt").textContent=r.length;
+  $("#tb").innerHTML=`<table><thead><tr>${c.map(k=>`<th data-s="${esc(k)}">${esc(k)}${sortK===k?(sortD>0?" ▲":" ▼"):""}</th>`).join("")}</tr></thead><tbody>${r.slice(0,1000).map(x=>`<tr>${c.map(k=>`<td title="${isObj(x[k])?"":esc(x[k])}">${fmt(k,x[k])}</td>`).join("")}</tr>`).join("")}</tbody></table>`+(r.length>1000?"<p class=mut>पहली 1000 rows दिख रही हैं — CSV में सब मिलेंगी।</p>":"");
+}
+$("#view").onclick=e=>{const h=e.target.closest("[data-s]");if(h){sortD=sortK===h.dataset.s?-sortD:1;sortK=h.dataset.s;return draw()}
+  const j=e.target.closest("[data-j]");if(j){const p=document.createElement("pre");p.textContent=JSON.stringify(JSON.parse(j.dataset.j),null,2);$("#tb").prepend(p);p.onclick=()=>p.remove()}};
+function csv(){const r=filtered(),c=cols(tables[cur].rows);
+  const t="\ufeff"+[c,...r.map(x=>c.map(k=>isObj(x[k])?JSON.stringify(x[k]):x[k]))].map(a=>a.map(v=>`"${String(v??"").replace(/"/g,'""').replace(/^([=+\-@])/,"'$1")}"`).join(",")).join("\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([t],{type:"text/csv"}));a.download=cur.replace(/\W+/g,"_")+".csv";a.click()}
+</script></body></html>

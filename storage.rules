@@ -1,0 +1,36 @@
+rules_version = '2';
+// Cloud Storage for Firebase (needs the Blaze plan). Staff = any signed-in user (keep public sign-up OFF).
+// Owner = custom claim owner:true (see DEPLOY steps).
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() { return request.auth != null; }
+    function isOwner()  { return signedIn() && request.auth.token.owner == true; }
+    function imgOrPdf() { return request.resource.contentType.matches('image/(jpeg|png|webp)|application/pdf'); }
+    function small()    { return request.resource.size < 5 * 1024 * 1024; }
+
+    match /customers/{code}/{file} {          // customer photos, QR cards
+      allow read: if signedIn();
+      allow create, update: if signedIn() && imgOrPdf() && small();
+      allow delete: if isOwner();
+    }
+    match /bills/{file} {                      // bill PDFs / PNGs
+      allow read: if signedIn();
+      allow create: if signedIn() && imgOrPdf() && small();   // not updatable: receipts stay as issued
+      allow delete: if isOwner();
+    }
+    match /bookings/{file} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && imgOrPdf() && small();
+      allow delete: if isOwner();
+    }
+    match /staff/{id}/{file} {                 // salary slips, documents — owner only
+      allow read, delete: if isOwner();
+      allow create, update: if isOwner() && imgOrPdf() && small();
+    }
+    match /backups/{file} {                    // JSON backups — owner only, up to 25 MB
+      allow read, delete: if isOwner();
+      allow create: if isOwner() && request.resource.contentType == 'application/json' && request.resource.size < 25 * 1024 * 1024;
+    }
+    match /{allPaths=**} { allow read, write: if false; }
+  }
+}

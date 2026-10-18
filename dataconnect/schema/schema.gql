@@ -1,0 +1,167 @@
+# ============================================================================
+# Shree Ram Dairy — SQL Connect schema. Each `type ... @table` becomes a PostgreSQL table;
+# `@index` / `@unique` become indexes; fields typed as other tables become foreign keys (<field>_id).
+# Money/litres are Float here; round to 2 decimals in the app (see mutations).
+# ============================================================================
+
+# ---------- Customers & ledger ----------
+type Customer @table(name: "customers")
+  @index(fields: ["type", "litres"])        # low-balance / due reports
+  @index(fields: ["isActive", "name"]) {    # sorted active list + name prefix search
+  id: UUID! @default(expr: "uuidV4()")
+  code: String! @unique                     # SRD-001 (what staff type / QR shows)
+  portalToken: UUID! @unique @default(expr: "uuidV4()")   # unguessable id for the public balance page
+  name: String!
+  mobile: String @index
+  type: String! @default(value: "prepaid")  # prepaid | monthly
+  litres: Float! @default(value: 0)
+  balance: Float! @default(value: 0)
+  due: Float! @default(value: 0)
+  isActive: Boolean! @default(value: true)  # soft delete keeps history intact
+  createdBy: String
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp! @default(expr: "request.time")
+}
+
+type CustomerLedger @table(name: "customer_ledger")
+  @index(fields: ["customer", "createdAt"], order: [ASC, DESC])
+  @index(fields: ["createdAt"], order: [DESC]) {
+  id: UUID! @default(expr: "uuidV4()")
+  customer: Customer!
+  kind: String!                              # create | milk | recharge | payment
+  litres: Float! @default(value: 0)
+  amount: Float! @default(value: 0)
+  note: String
+  createdBy: String
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+# ---------- Products, stock, billing ----------
+type Product @table(name: "products") {
+  id: UUID! @default(expr: "uuidV4()")
+  name: String! @unique
+  rate: Float!
+  unit: String! @default(value: "unit")
+  trackStock: Boolean! @default(value: false)
+  isActive: Boolean! @default(value: true)
+  sortOrder: Int! @default(value: 0)
+}
+
+type StockItem @table(name: "stock_items", key: "product") {
+  product: Product!
+  qty: Float! @default(value: 0)
+  minQty: Float! @default(value: 0)
+  updatedAt: Timestamp! @default(expr: "request.time")
+}
+
+type StockMovement @table(name: "stock_movements") @index(fields: ["product", "createdAt"], order: [ASC, DESC]) {
+  id: UUID! @default(expr: "uuidV4()")
+  product: Product!
+  delta: Float!
+  reason: String!                            # sale | bill_edit | purchase | manual
+  createdBy: String
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+type Bill @table(name: "bills")
+  @index(fields: ["billDate"], order: [DESC])
+  @index(fields: ["customer", "billDate"], order: [ASC, DESC]) {
+  id: UUID!                                  # generated in the browser so bill + items save in ONE transaction
+  billNo: Int! @col(dataType: "serial") @unique   # shown as B00001
+  billDate: Date!                            # business date (IST)
+  customer: Customer
+  mobile: String
+  mode: String! @default(value: "Cash")      # Cash | UPI | Card (Prepaid)
+  total: Float!
+  createdBy: String
+  createdAt: Timestamp! @default(expr: "request.time")
+  editedBy: String
+  editedAt: Timestamp
+  deletedAt: Timestamp
+}
+
+type BillItem @table(name: "bill_items") @index(fields: ["bill"]) @index(fields: ["product"]) {
+  id: UUID! @default(expr: "uuidV4()")
+  bill: Bill!
+  product: Product
+  name: String!
+  rate: Float!
+  qty: Float!
+}
+
+type Expense @table(name: "expenses") @index(fields: ["expenseDate"], order: [DESC]) {
+  id: UUID! @default(expr: "uuidV4()")
+  expenseDate: Date!
+  title: String!
+  amount: Float!
+  category: String
+  createdBy: String
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+# ---------- Advance bookings ----------
+type Booking @table(name: "bookings") @index(fields: ["deliveryDate", "status"]) {
+  id: UUID! @default(expr: "uuidV4()")
+  bookingNo: Int! @col(dataType: "serial") @unique   # shown as AB0001
+  name: String!
+  mobile: String
+  productName: String!
+  qty: Float!
+  rate: Float!
+  advance: Float! @default(value: 0)
+  deliveryDate: Date!
+  deliveryTime: String
+  note: String
+  status: String! @default(value: "Pending")  # Pending | Ready | Delivered | Cancelled
+  createdBy: String
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp! @default(expr: "request.time")
+}
+
+# ---------- Staff ledger (owner only) ----------
+type StaffMember @table(name: "staff_members") {
+  id: UUID! @default(expr: "uuidV4()")
+  name: String!
+  mobile: String
+  monthlySalary: Float!
+  startDate: Date
+  isActive: Boolean! @default(value: true)
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+type StaffMonth @table(name: "staff_months", key: ["staff", "month"]) {   # salary snapshot per month
+  staff: StaffMember!
+  month: Date!                               # first day of month
+  salary: Float!
+}
+
+type StaffEntry @table(name: "staff_entries") @index(fields: ["staff", "entryDate"], order: [ASC, DESC]) {
+  id: UUID! @default(expr: "uuidV4()")
+  staff: StaffMember!
+  entryDate: Date!
+  type: String!                              # absent | half | advance | product
+  amount: Float! @default(value: 0)
+  note: String
+  createdBy: String
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+# ---------- File store metadata (the bytes live in Cloud Storage) ----------
+type FileObject @table(name: "file_objects") @index(fields: ["customer", "kind"]) @index(fields: ["bill"]) {
+  id: UUID! @default(expr: "uuidV4()")
+  storagePath: String! @unique               # e.g. customers/SRD-001/photo.jpg
+  kind: String!                              # customer_photo | bill_pdf | booking_slip | qr_card | backup | staff_doc
+  contentType: String
+  sizeBytes: Int64
+  customer: Customer
+  bill: Bill
+  uploadedBy: String
+  createdAt: Timestamp! @default(expr: "request.time")
+  deletedAt: Timestamp
+}
+
+type AppSetting @table(name: "app_settings", key: "key") {
+  key: String!
+  value: Any!
+  updatedAt: Timestamp! @default(expr: "request.time")
+}

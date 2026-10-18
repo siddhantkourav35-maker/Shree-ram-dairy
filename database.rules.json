@@ -1,0 +1,90 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "admins": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": false } },
+    "staff":  { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": false } },
+
+    "customers": {
+      ".read": "auth != null && (root.child('staff/'+auth.uid).val() === true || root.child('admins/'+auth.uid).val() === true)",
+      "$id": {
+        ".write": "auth != null && (root.child('staff/'+auth.uid).val() === true || root.child('admins/'+auth.uid).val() === true) && (newData.exists() || root.child('admins/'+auth.uid).val() === true)",
+        ".validate": "newData.hasChildren(['name','type','token']) && newData.child('name').isString() && newData.child('name').val().length <= 80 && (newData.child('type').val() === 'prepaid' || newData.child('type').val() === 'monthly') && (!newData.child('litres').exists() || newData.child('litres').val() >= 0) && (!newData.child('balance').exists() || newData.child('balance').val() >= 0)"
+      }
+    },
+
+    "tokens": {
+      "$t": {
+        ".read": true,
+        ".write": "auth != null && (root.child('staff/'+auth.uid).val() === true || root.child('admins/'+auth.uid).val() === true)"
+      }
+    },
+
+    "portal": {
+      "$t": {
+        ".read": true,
+        ".write": "auth != null && (root.child('staff/'+auth.uid).val() === true || root.child('admins/'+auth.uid).val() === true)"
+      }
+    },
+
+    "customer_lookup": {
+      ".read": true,
+      ".write": "auth != null && (root.child('staff/'+auth.uid).val() === true || root.child('admins/'+auth.uid).val() === true)"
+    },
+
+    "customer_orders": {
+      ".read": true,
+      "$orderId": {
+        ".write": true
+      }
+    },
+
+    "customer_requests": {
+      ".read": true,
+      "$reqId": {
+        ".write": true
+      }
+    },
+
+    "logs": {
+      "$id": { "$k": {
+        ".read": "auth != null && (root.child('staff/'+auth.uid).val() === true || root.child('admins/'+auth.uid).val() === true)",
+        ".write": "auth != null && !data.exists() && (root.child('staff/'+auth.uid).val() === true || root.child('admins/'+auth.uid).val() === true)"
+      } }
+    },
+
+    "bills": {
+      ".indexOn": ["day"],
+      ".read": "auth != null && (root.child('staff/'+auth.uid).val() === true || root.child('admins/'+auth.uid).val() === true)",
+      "$no": {
+        ".write": "auth != null && ((!data.exists() && root.child('staff/'+auth.uid).val() === true) || root.child('admins/'+auth.uid).val() === true)",
+        ".validate": "newData.hasChildren(['items','total','day']) && newData.child('total').isNumber() && newData.child('total').val() >= 0"
+      }
+    },
+
+    "stock": {
+      ".read": "auth != null && (root.child('staff/'+auth.uid).val() === true || root.child('admins/'+auth.uid).val() === true)",
+      ".write": "auth != null && (root.child('staff/'+auth.uid).val() === true || root.child('admins/'+auth.uid).val() === true)"
+    },
+
+    "meta": {
+      "billCounter": {
+        ".read": "auth != null && (root.child('staff/'+auth.uid).val() === true || root.child('admins/'+auth.uid).val() === true)",
+        ".write": "auth != null && (root.child('staff/'+auth.uid).val() === true || root.child('admins/'+auth.uid).val() === true)",
+        ".validate": "newData.isNumber()"
+      }
+    },
+
+    "expenses": {
+      ".indexOn": ["day"],
+      ".read": "auth != null && root.child('admins/'+auth.uid).val() === true",
+      ".write": "auth != null && root.child('admins/'+auth.uid).val() === true"
+    },
+
+    "settings": {
+      ".read": "auth != null && (root.child('staff/'+auth.uid).val() === true || root.child('admins/'+auth.uid).val() === true)",
+      ".write": "auth != null && root.child('admins/'+auth.uid).val() === true"
+    }
+  }
+}

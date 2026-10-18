@@ -1,0 +1,13 @@
+# Firebase SQL Connect (formerly Data Connect) service. `firebase deploy --only dataconnect`
+# creates the Cloud SQL instance + the database below (if missing) and migrates every table in schema/schema.gql.
+specVersion: "v1"
+serviceId: "shree-ram-dairy"
+location: "asia-south1"            # pick the nearest region SQL Connect supports for your project
+schema:
+  source: "./schema"
+  datasource:
+    postgresql:
+      database: "shree_ram_dairy"  # created automatically on first deploy
+      cloudSql:
+        instanceId: "shree-ram-dairy-sql"
+connectorDirs: ["./connector"]

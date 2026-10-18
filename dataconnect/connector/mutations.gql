@@ -1,0 +1,94 @@
+# Every multi-step change is @transaction: balance + ledger commit together or not at all.
+# Callers round litres/amount to 2 decimals before sending.
+
+mutation CreateCustomer($code: String!, $name: String!, $mobile: String, $type: String!, $litres: Float!, $amount: Float!)
+  @auth(level: USER) @transaction {
+  customer: customer_insert(data: { code: $code, name: $name, mobile: $mobile, type: $type, litres: $litres, balance: $amount, createdBy_expr: "auth.uid" })
+  customerLedger_insert(data: { customerId_expr: "response.customer.id", kind: "create", litres: $litres, amount: $amount, createdBy_expr: "auth.uid" })
+}
+mutation UpdateCustomer($id: UUID!, $name: String!, $mobile: String) @auth(level: USER) {
+  customer_update(id: $id, data: { name: $name, mobile: $mobile, updatedAt_expr: "request.time" })
+}
+mutation DeactivateCustomer($id: UUID!) @auth(expr: "auth.token.owner == true") {
+  customer_update(id: $id, data: { isActive: false, updatedAt_expr: "request.time" })
+}
+
+# Prepaid delivery: refuses (and rolls back) when litres or balance would go negative
+mutation DeliverMilkPrepaid($code: String!, $litres: Float!, $amount: Float!) @auth(level: USER) @transaction {
+  cust: customer(first: { where: { code: { eq: $code } } })
+    @check(expr: "this != null && this.type == 'prepaid' && this.litres >= vars.litres && this.balance >= vars.amount", message: "ग्राहक नहीं मिला या Prepaid balance काफ़ी नहीं है")
+  customer_update(first: { where: { code: { eq: $code } } }, data: { litres_update: { dec: $litres }, balance_update: { dec: $amount }, updatedAt_expr: "request.time" })
+  customerLedger_insert(data: { customerId_expr: "response.cust.id", kind: "milk", litres: $litres, amount: $amount, createdBy_expr: "auth.uid" })
+}
+mutation DeliverMilkMonthly($code: String!, $litres: Float!, $amount: Float!) @auth(level: USER) @transaction {
+  cust: customer(first: { where: { code: { eq: $code } } }) @check(expr: "this != null && this.type == 'monthly'", message: "Monthly ग्राहक नहीं मिला")
+  customer_update(first: { where: { code: { eq: $code } } }, data: { due_update: { inc: $amount }, updatedAt_expr: "request.time" })
+  customerLedger_insert(data: { customerId_expr: "response.cust.id", kind: "milk", litres: $litres, amount: $amount, createdBy_expr: "auth.uid" })
+}
+mutation RechargeCustomer($code: String!, $litres: Float!, $amount: Float!) @auth(level: USER) @transaction {
+  cust: customer(first: { where: { code: { eq: $code } } }) @check(expr: "this != null", message: "ग्राहक नहीं मिला")
+  customer_update(first: { where: { code: { eq: $code } } }, data: { litres_update: { inc: $litres }, balance_update: { inc: $amount }, updatedAt_expr: "request.time" })
+  customerLedger_insert(data: { customerId_expr: "response.cust.id", kind: "recharge", litres: $litres, amount: $amount, createdBy_expr: "auth.uid" })
+}
+mutation ReceivePayment($code: String!, $amount: Float!) @auth(level: USER) @transaction {
+  cust: customer(first: { where: { code: { eq: $code } } }) @check(expr: "this != null && this.due >= vars.amount", message: "बकाया से ज़्यादा payment नहीं ले सकते")
+  customer_update(first: { where: { code: { eq: $code } } }, data: { due_update: { dec: $amount }, updatedAt_expr: "request.time" })
+  customerLedger_insert(data: { customerId_expr: "response.cust.id", kind: "payment", amount: $amount, createdBy_expr: "auth.uid" })
+}
+
+# Bill + all its items in one transaction (browser supplies $id and each item's billId = $id)
+mutation CreateBill($id: UUID!, $billDate: Date!, $customerId: UUID, $mobile: String, $mode: String!, $total: Float!, $items: [BillItem_Data!]!)
+  @auth(level: USER) @transaction {
+  bill_insert(data: { id: $id, billDate: $billDate, customerId: $customerId, mobile: $mobile, mode: $mode, total: $total, createdBy_expr: "auth.uid" })
+  billItem_insertMany(data: $items)
+}
+mutation EditBill($id: UUID!, $mobile: String, $mode: String!, $total: Float!, $items: [BillItem_Data!]!) @auth(expr: "auth.token.owner == true") @transaction {
+  bill_update(id: $id, data: { mobile: $mobile, mode: $mode, total: $total, editedBy_expr: "auth.uid", editedAt_expr: "request.time" })
+  billItem_deleteMany(where: { bill: { id: { eq: $id } } })
+  billItem_insertMany(data: $items)
+}
+mutation DeleteBill($id: UUID!) @auth(expr: "auth.token.owner == true") {
+  bill_update(id: $id, data: { deletedAt_expr: "request.time", editedBy_expr: "auth.uid" })
+}
+
+mutation UpsertProduct($id: UUID, $name: String!, $rate: Float!, $unit: String, $trackStock: Boolean, $sortOrder: Int) @auth(expr: "auth.token.owner == true") {
+  product_upsert(data: { id: $id, name: $name, rate: $rate, unit: $unit, trackStock: $trackStock, sortOrder: $sortOrder })
+}
+mutation AdjustStock($productId: UUID!, $delta: Float!, $reason: String!) @auth(level: USER) @transaction {
+  stockItem_update(key: { productId: $productId }, data: { qty_update: { inc: $delta }, updatedAt_expr: "request.time" })
+  stockMovement_insert(data: { productId: $productId, delta: $delta, reason: $reason, createdBy_expr: "auth.uid" })
+}
+mutation SetStock($productId: UUID!, $qty: Float!, $minQty: Float!) @auth(level: USER) {
+  stockItem_upsert(data: { productId: $productId, qty: $qty, minQty: $minQty })
+}
+
+mutation AddExpense($expenseDate: Date!, $title: String!, $amount: Float!, $category: String) @auth(expr: "auth.token.owner == true") {
+  expense_insert(data: { expenseDate: $expenseDate, title: $title, amount: $amount, category: $category, createdBy_expr: "auth.uid" })
+}
+mutation DeleteExpense($id: UUID!) @auth(expr: "auth.token.owner == true") { expense_delete(id: $id) }
+
+mutation SaveBooking($name: String!, $mobile: String, $productName: String!, $qty: Float!, $rate: Float!, $advance: Float!, $deliveryDate: Date!, $deliveryTime: String, $note: String) @auth(level: USER) {
+  booking_insert(data: { name: $name, mobile: $mobile, productName: $productName, qty: $qty, rate: $rate, advance: $advance, deliveryDate: $deliveryDate, deliveryTime: $deliveryTime, note: $note, createdBy_expr: "auth.uid" })
+}
+mutation UpdateBooking($id: UUID!, $name: String!, $mobile: String, $productName: String!, $qty: Float!, $rate: Float!, $advance: Float!, $deliveryDate: Date!, $deliveryTime: String, $note: String) @auth(level: USER) {
+  booking_update(id: $id, data: { name: $name, mobile: $mobile, productName: $productName, qty: $qty, rate: $rate, advance: $advance, deliveryDate: $deliveryDate, deliveryTime: $deliveryTime, note: $note, updatedAt_expr: "request.time" })
+}
+mutation SetBookingStatus($id: UUID!, $status: String!) @auth(level: USER) { booking_update(id: $id, data: { status: $status, updatedAt_expr: "request.time" }) }
+mutation DeleteBooking($id: UUID!) @auth(expr: "auth.token.owner == true") { booking_delete(id: $id) }
+
+mutation CreateStaff($name: String!, $mobile: String, $monthlySalary: Float!, $startDate: Date) @auth(expr: "auth.token.owner == true") {
+  staffMember_insert(data: { name: $name, mobile: $mobile, monthlySalary: $monthlySalary, startDate: $startDate })
+}
+mutation SnapshotStaffMonth($staffId: UUID!, $month: Date!, $salary: Float!) @auth(expr: "auth.token.owner == true") {
+  staffMonth_upsert(data: { staffId: $staffId, month: $month, salary: $salary })
+}
+mutation AddStaffEntry($staffId: UUID!, $entryDate: Date!, $type: String!, $amount: Float!, $note: String) @auth(expr: "auth.token.owner == true") {
+  staffEntry_insert(data: { staffId: $staffId, entryDate: $entryDate, type: $type, amount: $amount, note: $note, createdBy_expr: "auth.uid" })
+}
+mutation DeleteStaffEntry($id: UUID!) @auth(expr: "auth.token.owner == true") { staffEntry_delete(id: $id) }
+
+mutation RecordFile($storagePath: String!, $kind: String!, $contentType: String, $sizeBytes: Int64, $customerId: UUID, $billId: UUID) @auth(level: USER) {
+  fileObject_upsert(data: { storagePath: $storagePath, kind: $kind, contentType: $contentType, sizeBytes: $sizeBytes, customerId: $customerId, billId: $billId, uploadedBy_expr: "auth.uid" })
+}
+mutation DeleteFileRecord($id: UUID!) @auth(expr: "auth.token.owner == true") { fileObject_update(id: $id, data: { deletedAt_expr: "request.time" }) }
+mutation SetSetting($key: String!, $value: Any!) @auth(expr: "auth.token.owner == true") { appSetting_upsert(data: { key: $key, value: $value }) }
